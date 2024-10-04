@@ -6,7 +6,7 @@ def create_app():
 
     @app.get("/")
     def index():
-        return render_template("home.html")
+        return render_template("index.html")
 
     @app.get("/rules/")
     def rules():
@@ -16,12 +16,12 @@ def create_app():
     def rules_whist():
         return render_template("rules_whist.html")
 
-    @app.get("/create_game")
+    @app.get("/games/new")
     def create_game_get():
-        return render_template("create_game.html")
+        return render_template("games_new.html")
 
-    @app.get("/join_game/")
+    @app.get("/games/join/")
     def join_game_get():
-        return render_template("join_game.html")
+        return render_template("games_join.html")
 
     return app
