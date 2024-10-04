@@ -4,10 +4,16 @@
   <body>
     <a href="/"><h1>cardsonline.uk</h1></a>
 
-    <form>
-      <label>No. Players</label>
-      <input type="number">
-      <input type="submit" value="Create">
+    <form id="settings">
+      <div><label id="game_label" for="game">Game:</label></div>
+      <select id="game" name="game" required>
+        <option id="default_game" selected>Choose a game</option>
+        <option value="whist">Whist</option>
+        <option value="promise">Promise</option>
+        <option value="poker">Poker</option>
+      </select>
     </form>
+
+    <script src="{{ url_for('static', filename='js/create_game.js') }}"></script>
   </body>
 </html>
