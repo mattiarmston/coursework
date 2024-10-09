@@ -1,5 +1,6 @@
 <html>
   <head>
+    <title>New Game</title>
   </head>
   <body>
     <a href="/"><h1>cardsonline.uk</h1></a>
@@ -7,11 +8,49 @@
     <form id="settings">
       <div><label id="game_label" for="game">Game:</label></div>
       <select id="game" name="game" required>
-        <option id="default_game" selected>Choose a game</option>
+        <option id="default_game" selected disabled hidden>Choose a game</option>
         <option value="whist">Whist</option>
         <option value="promise">Promise</option>
         <option value="poker">Poker</option>
       </select>
+    </form>
+
+    <form id="whist" style="display: none" action="/games/new" method="POST">
+      <select name="game" style="display: none">
+        <option value="whist" selected></option>
+      </select>
+
+      <div><label>Players:</label></div>
+      <div><p>4</p></div>
+
+      <div><label for="scoring">Scoring:</label></div>
+      <select name="scoring">
+        <option value="british_short_whist">British Short Whist</option>
+        <option value="american_short_whist">American Short Whist</option>
+        <option value="long_whist">Long Whist</option>
+      </select>
+
+      <div><label for="length">Length:</label></div>
+      <select name="length">
+        <option value="game">1 game</option>
+        <option value="rubber">1 rubber</option>
+      </select>
+
+      <div><input type="submit" value="Create Game"></div>
+    </form>
+
+    <form id="promise" style="display: none" action="/games/new" method="POST">
+      <select name="game" style="display: none">
+        <option value="promise" selected></option>
+      </select>
+      <div><label>Coming soon!</label></div>
+    </form>
+
+    <form id="poker" style="display: none" action="/games/new" method="POST">
+      <select name="game" style="display: none">
+        <option value="poker" selected></option>
+      </select>
+      <div><label>Coming soon!</label></div>
     </form>
 
     <script src="{{ url_for('static', filename='js/games_new.js') }}"></script>

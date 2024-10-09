@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 
 def create_app():
     # Gives current path to flask
@@ -17,11 +17,16 @@ def create_app():
         return render_template("rules_whist.html")
 
     @app.get("/games/new")
-    def create_game_get():
+    def games_new_get():
         return render_template("games_new.html")
 
+    @app.post("/games/new")
+    def games_new_post():
+        game = request.form["game"]
+        return render_template("games_new_post.html", game=game)
+
     @app.get("/games/join/")
-    def join_game_get():
+    def games_join_get():
         return render_template("games_join.html")
 
     return app
