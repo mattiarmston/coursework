@@ -6,8 +6,12 @@
     <a href="/"><h1>onlinecards.uk</h1></a>
 
     <p>New Game Created</p>
-    <ul>
-      <li>Game: {{ game }}</li>
-    </ul>
+
+    <h5>GameID:</h5>
+    <p>{{ gameID }}</p>
+    <h5>Link:</h5>
+    <a href="{{domain}}/games/join/{{gameID}}">{{domain}}/games/join/{{gameID}}</a>
+    <h5>Config:</h5>
+    <p>{{ config }}</p>
   </body>
 </html>

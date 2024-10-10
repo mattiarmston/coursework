@@ -1,4 +1,17 @@
-from flask import Flask, render_template, request
+import sqlite3, random, json
+
+from flask import Flask, render_template, request, g, current_app
+
+def get_db():
+    database = "dev.sqlite3"
+    if 'db' not in g:
+        g.db = sqlite3.connect(
+            database,
+            detect_types=sqlite3.PARSE_DECLTYPES
+        )
+        # Return rows that behave like python dicts
+        g.db.row_factory = sqlite3.Row
+    return g.db
 
 def create_app():
     # Gives current path to flask
@@ -23,10 +36,57 @@ def create_app():
     @app.post("/games/new")
     def games_new_post():
         game = request.form["game"]
-        return render_template("games_new_post.html", game=game)
+        if game not in ["whist"]:
+            return "Unsupported game {}".format(game), 400
+        db = get_db()
+        cursor = db.cursor()
+        while True:
+            gameID = random.randint(1, 999999)
+            existing_game = cursor.execute(
+                "SELECT gameID FROM games WHERE gameID = ?",
+                [gameID]
+            ).fetchone()
+            if existing_game == None:
+                break
+        scoring = request.form["scoring"]
+        length = request.form["length"]
+        config_dict = {
+            "scoring": scoring,
+            "length": length,
+        }
+        config = json.dumps(config_dict)
+        cursor.execute(
+            "insert into games(gameID, config) values (?, ?)",
+            [gameID, config]
+        )
+        domain = "localhost:5000"
+        db.commit()
+        return render_template(
+            "games_new_post.html", gameID=gameID, domain=domain, config=config
+        )
 
     @app.get("/games/join/")
-    def games_join_get():
-        return render_template("games_join.html")
+    def games_join_get(error_msg=""):
+        return render_template("games_join.html", error=error_msg)
+
+    @app.post("/games/join/")
+    def games_join_post():
+        gameID = request.form["gameID"]
+        db = get_db()
+        cursor = db.cursor()
+        result = cursor.execute(
+            "SELECT * FROM games WHERE gameID = ?",
+            [gameID]
+        ).fetchone()
+        if result == None:
+            # Not sure this is the correct solution, potentially a redirect
+            # could be better. However the address is the same, only the
+            # protocol would change, from POST to GET
+            error_msg = "Error game {} cannot be found".format(gameID)
+            return games_join_get(error_msg=error_msg)
+        config = result["config"]
+        return render_template(
+            "games_join_post.html", gameID=gameID, config=config
+        )
 
     return app

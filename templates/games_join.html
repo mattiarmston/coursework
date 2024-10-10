@@ -5,10 +5,12 @@
   <body>
     <a href="/"><h1>onlinecards.uk</h1></a>
 
-    <form>
-      <label>Game ID</label>
-      <input type="number">
-      <input type="submit" value="Join">
+    <form action="/games/join/" method="POST">
+      <div><label>Game ID</label></div>
+      <div><input name="gameID" type="number"></div>
+      <div><input type="submit" value="Join"></div>
     </form>
+
+    <p>{{ error }}</p>
   </body>
 </html>
