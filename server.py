@@ -4,7 +4,7 @@ from flask import Flask, render_template, request, g, current_app
 
 def get_db():
     database = "dev.sqlite3"
-    if 'db' not in g:
+    if "db" not in g:
         g.db = sqlite3.connect(
             database,
             detect_types=sqlite3.PARSE_DECLTYPES
@@ -36,7 +36,7 @@ def create_app():
     @app.post("/games/new")
     def games_new_post():
         game = request.form["game"]
-        if game not in ["whist"]:
+        if game not in ["chatroom", "whist"]:
             return "Unsupported game {}".format(game), 400
         db = get_db()
         cursor = db.cursor()
@@ -48,12 +48,17 @@ def create_app():
             ).fetchone()
             if existing_game == None:
                 break
-        scoring = request.form["scoring"]
-        length = request.form["length"]
-        config_dict = {
-            "scoring": scoring,
-            "length": length,
-        }
+        config_dict = {}
+        if game == "chatroom":
+            config_dict = {"game": game}
+        elif game == "whist":
+            scoring = request.form["scoring"]
+            length = request.form["length"]
+            config_dict = {
+                "game": game,
+                "scoring": scoring,
+                "length": length,
+            }
         config = json.dumps(config_dict)
         cursor.execute(
             "insert into games(gameID, config) values (?, ?)",
@@ -69,9 +74,8 @@ def create_app():
     def games_join_get(error_msg=""):
         return render_template("games_join.html", error=error_msg)
 
-    @app.post("/games/join/")
-    def games_join_post():
-        gameID = request.form["gameID"]
+    @app.get("/games/join/<gameID>")
+    def games_join_ID_get(gameID):
         db = get_db()
         cursor = db.cursor()
         result = cursor.execute(
@@ -82,11 +86,16 @@ def create_app():
             # Not sure this is the correct solution, potentially a redirect
             # could be better. However the address is the same, only the
             # protocol would change, from POST to GET
-            error_msg = "Error game {} cannot be found".format(gameID)
+            error_msg = f"Error game {gameID} cannot be found"
             return games_join_get(error_msg=error_msg)
-        config = result["config"]
+        configJSON = result["config"]
+        config = json.loads(configJSON)
+        if config["game"] == "chatroom":
+            return render_template(
+                "chatroom.html", gameID=gameID
+            )
         return render_template(
-            "games_join_post.html", gameID=gameID, config=config
+            "games_join_post.html", gameID=gameID, config=configJSON
         )
 
     return app

@@ -1,0 +1,22 @@
+<html>
+  <head>
+    <title>Joined Game</title>
+  </head>
+  <body>
+    <a href="/"><h1>onlinecards.uk</h1></a>
+
+    <h5>Joined Game:</h5>
+    <p>{{ gameID }}</p>
+
+    <div id="msg_list">
+      <!-- Messages -->
+    </div>
+
+    <form id="msg_form">
+      <input id="msg_input" type="text">
+      <input type="submit" value="send">
+    </form>
+
+    <script src="{{ url_for('static', filename='js/chatroom.js') }}"></script>
+  </body>
+</html>

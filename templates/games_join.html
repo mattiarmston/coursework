@@ -5,12 +5,14 @@
   <body>
     <a href="/"><h1>onlinecards.uk</h1></a>
 
-    <form action="/games/join/" method="POST">
+    <form id="join_form" action="/games/join/" method="GET">
       <div><label>Game ID</label></div>
-      <div><input name="gameID" type="number"></div>
+      <div><input id="gameID" type="number"></div>
       <div><input type="submit" value="Join"></div>
     </form>
 
     <p>{{ error }}</p>
+
+    <script src="{{ url_for('static', filename='js/games_join.js') }}"></script>
   </body>
 </html>

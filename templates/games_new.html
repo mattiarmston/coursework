@@ -9,10 +9,19 @@
       <div><label id="game_label" for="game">Game:</label></div>
       <select id="game" name="game" required>
         <option id="default_game" selected disabled hidden>Choose a game</option>
+        <option value="chatroom">Chatroom</option>
         <option value="whist">Whist</option>
         <option value="promise">Promise</option>
         <option value="poker">Poker</option>
       </select>
+    </form>
+
+    <form id="chatroom" style="display: none" action="/games/new" method="POST">
+      <select name="game" style="display: none">
+        <option value="chatroom" selected></option>
+      </select>
+
+      <div><input type="submit" value="Create Game"></div>
     </form>
 
     <form id="whist" style="display: none" action="/games/new" method="POST">
