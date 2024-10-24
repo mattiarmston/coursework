@@ -1,14 +1,21 @@
+<!DOCTYPE html>
 <html>
   <head>
     <title>onlinecards.uk</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
   </head>
   <body>
-    <a href="/"><h1>onlinecards.uk</h1></a>
+    <div class="header">
+      <div class="left"></div>
+      <div class="center"><a class="logo logo_large" href="/">onlinecards.uk</a></div>
+      <div class="right"></div>
+    </div>
 
-    <ul>
-      <li><a href="games/new">New Game</a></li>
-      <li><a href="games/join">Join Game</a></li>
-      <li><a href="rules">Rules</a></li>
-    </ul>
+    <div class="center">
+      <a class="main_link" href="games/new">New Game</a>
+      <a class="main_link" href="games/join">Join Game</a>
+      <a class="main_link" href="rules">Rules</a>
+    </div>
+
   </body>
 </html>

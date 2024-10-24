@@ -1,21 +1,35 @@
+<!DOCTYPE html>
 <html>
   <head>
     <title>Joined Game</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
   </head>
   <body>
-    <a href="/"><h1>onlinecards.uk</h1></a>
+    <div class="header">
+      <div class="left"><a class="logo logo_corner" href="/">onlinecards.uk</a></div>
+      <div class="center"><h1 class="title">Game {{ gameID }}</h1></div>
+      <div class="right"></div>
+    </div>
 
-    <h5>Joined Game:</h5>
-    <p>{{ gameID }}</p>
+    <p style="display: none" id="gameID">{{ gameID }}</p>
 
-    <div id="msg_list">
+    <div class="center">
+      <div>
+        <a class="tooltip" id="game_link" href="localhost:5000/games/join/{{ gameID }}">
+          localhost:5000/games/join/{{ gameID }}</a>
+      </div>
+    </div>
+
+    <div class="msg_list" id="msg_list">
       <!-- Messages -->
     </div>
 
-    <form id="msg_form">
-      <input id="msg_input" type="text">
-      <input type="submit" value="send">
-    </form>
+    <div class="center">
+      <form class="msg_form" id="msg_form">
+        <input class="msg_input" id="msg_input" type="text">
+        <input type="submit" value="send">
+      </form>
+    </div>
 
     <script src="{{ url_for('static', filename='js/chatroom.js') }}"></script>
   </body>

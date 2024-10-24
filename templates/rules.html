@@ -1,13 +1,18 @@
 <html>
   <head>
     <title>Rules</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
   </head>
   <body>
-    <a href="/"><h1>onlinecards.uk</h1></a>
+    <div class="header">
+      <div class="left"><a class="logo logo_corner" href="/">onlinecards.uk</a></div>
+      <div class="center"><h1 class="title">Rules</h1></div>
+      <div class="right"></div>
+    </div>
 
-    <h2>Rules</h2>
-    <ul>
-      <li><a href="/rules/whist">Whist</a></li>
-    </ul>
+    <div class="center">
+      <h2>Classic Games:</h2>
+      <a class="main_link" href="/rules/whist">Whist</a>
+    </div>
   </body>
 </html>

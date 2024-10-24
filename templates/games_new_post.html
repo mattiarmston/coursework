@@ -1,17 +1,25 @@
 <html>
   <head>
     <title>New Game Created</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
   </head>
   <body>
-    <a href="/"><h1>onlinecards.uk</h1></a>
+    <div class="header">
+      <div class="left"><a class="logo logo_corner" href="/">onlinecards.uk</a></div>
+      <div class="center"><h1 class="title">New Game</h1></div>
+      <div class="right"></div>
+    </div>
 
-    <p>New Game Created</p>
+    <div class="center">
+      <p>New Game Created</p>
 
-    <h5>GameID:</h5>
-    <p>{{ gameID }}</p>
-    <h5>Link:</h5>
-    <a href="{{domain}}/games/join/{{gameID}}">{{domain}}/games/join/{{gameID}}</a>
-    <h5>Config:</h5>
-    <p>{{ config }}</p>
+      <h6>GameID:</h6>
+      <p>{{ gameID }}</p>
+      <h6>Link:</h6>
+      <a href="{{domain}}/games/join/{{gameID}}">{{domain}}/games/join/{{gameID}}</a>
+      <h6>Config:</h6>
+      <p>{{ config }}</p>
+    </div>
+
   </body>
 </html>

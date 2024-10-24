@@ -1,9 +1,10 @@
 <html>
   <head>
     <title>Joined Game</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
   </head>
   <body>
-    <a href="/"><h1>onlinecards.uk</h1></a>
+    <div class="header"><a class="logo logo_corner" href="/">onlinecards.uk</a></div>
 
     <h5>Joined Game:</h5>
     <p>{{ gameID }}</p>

@@ -1,12 +1,19 @@
 <html>
   <head>
     <title>New Game</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
   </head>
   <body>
-    <a href="/"><h1>onlinecards.uk</h1></a>
+    <div class="header">
+      <div class="left"><a class="logo logo_corner" href="/">onlinecards.uk</a></div>
+      <div class="center"><h1 class="title">New Game</h1></div>
+      <div class="right"></div>
+    </div>
+
+    <div class="center">
 
     <form id="settings">
-      <div><label id="game_label" for="game">Game:</label></div>
+      <label id="game_label" for="game">Game:</label>
       <select id="game" name="game" required>
         <option id="default_game" selected disabled hidden>Choose a game</option>
         <option value="chatroom">Chatroom</option>
@@ -29,8 +36,10 @@
         <option value="whist" selected></option>
       </select>
 
-      <div><label>Players:</label></div>
-      <div><p>4</p></div>
+      <label for="players">Players:</label>
+      <select id="players" name="players">
+        <option value="4">4</option>
+      </select>
 
       <div><label for="scoring">Scoring:</label></div>
       <select id="scoring" name="scoring">
@@ -61,6 +70,8 @@
       </select>
       <div><label>Coming soon!</label></div>
     </form>
+
+    </div>
 
     <script src="{{ url_for('static', filename='js/games_new.js') }}"></script>
   </body>

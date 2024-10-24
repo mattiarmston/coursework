@@ -1,0 +1,171 @@
+
+@font-face {
+    font-family: Parisienne;
+    src: url("/static/fonts/Parisienne-Regular.ttf");
+}
+
+@font-face {
+    font-family: Lora;
+    src: url("/static/fonts/Lora-VariableFont_wght.ttf");
+}
+
+:root {
+    --bg-brown: rgb(32, 25, 20);
+}
+
+body {
+    background-color: var(--bg-brown);
+    font-size: 1.25em;
+}
+
+h2 {
+    color: antiquewhite;
+    font-size: 1.5em;
+    font-family: Lora, serif;
+    font-weight: normal;
+}
+
+h6 {
+    color: antiquewhite;
+    font-size: 1em;
+    font-family: Lora, serif;
+    font-weight: bold;
+    margin: 0.5em 0em;
+}
+
+p {
+    color: antiquewhite;
+    font-family: Lora, serif;
+    font-size: 1em;
+}
+
+a {
+    color: antiquewhite;
+    font-size: 1em;
+    font-family: Lora, serif;
+}
+
+label {
+    color: antiquewhite;
+    display: block;
+    font-size: 1.25em;
+}
+
+select {
+    background-color: antiquewhite;
+    color: rgb(32, 25, 20);
+    text-align: center;
+    font-family: Lora;
+    font-size: 1em;
+    border-radius: 0.25em;
+    margin-bottom: 0.75em;
+}
+
+input {
+    background-color: antiquewhite;
+    color: rgb(32, 25, 20);
+    text-align: center;
+    font-family: inherit;
+    font-size: 1em;
+    border-radius: 0.25em;
+    margin-bottom: 0.75em;
+}
+
+form {
+    margin-bottom: 0;
+}
+
+.left, .right {
+    flex: 1;
+}
+
+.center {
+    text-align: center;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    width: auto;
+    background-color: antiquewhite;
+    padding: 0.25em 1em;
+    margin-bottom: 2em;
+}
+
+.logo {
+    font-family: Parisienne, cursive;
+    color: var(--bg-brown);
+}
+
+.logo_corner {
+    font-size: 2.5em;
+    text-align: center;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.logo_large {
+    font-size: 3.5em;
+    text-align: center;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.title {
+    font-size: 2.5em;
+    text-align: center;
+    font-weight: bold;
+    margin: 0;
+}
+
+.main_link {
+    display: block;
+    font-size: 1.25em;
+    margin: 0.5em 0em;
+}
+
+.msg_list {
+    margin: 1em;
+}
+
+.msg_list p {
+    margin: 0.25em 0;
+}
+
+.msg_form {
+    width: 99%;
+    position: absolute;
+    bottom: 0;
+}
+
+.msg_input {
+    width: 90%;
+    text-align: left;
+}
+
+.tooltip {
+    position: relative;
+    display: inline-block;
+    --message: "Copy";
+}
+
+.tooltip:after {
+    content: var(--message);
+    position: absolute;
+    left: 105%;
+    top: 0;
+    display: none;
+    background: antiquewhite;
+    color: var(--bg-brown);
+    font-size: 0.9em;
+    border-radius: 0.25em;
+    padding: 0.125em 0.25em;
+}
+
+.tooltip:hover:after {
+    display: block;
+}
+
+.error {
+    color: red;
+}
