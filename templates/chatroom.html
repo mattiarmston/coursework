@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Joined Game</title>
+    <title>Game {{ gameID }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
   </head>
   <body>
@@ -13,22 +13,34 @@
 
     <p style="display: none" id="gameID">{{ gameID }}</p>
 
-    <div class="center">
-      <div>
-        <a class="tooltip" id="game_link" href="localhost:5000/games/join/{{ gameID }}">
-          localhost:5000/games/join/{{ gameID }}</a>
+    <div class="username">
+      <div class="center">
+        <form id="username_form">
+          <label for="username_input">Username:</label>
+          <div><input id="username_input" type="text"></div>
+          <input value="Join" type="submit">
+        </form>
       </div>
     </div>
 
-    <div class="msg_list" id="msg_list">
-      <!-- Messages -->
-    </div>
+    <div id="main">
+      <div class="center">
+        <div>
+          <a class="tooltip" id="game_link" href="http://localhost:5000/games/join/{{ gameID }}">
+            localhost:5000/games/join/{{ gameID }}</a>
+        </div>
+      </div>
 
-    <div class="center">
-      <form class="msg_form" id="msg_form">
-        <input class="msg_input" id="msg_input" type="text">
-        <input type="submit" value="send">
-      </form>
+      <div class="msg_list" id="msg_list">
+        <!-- Messages -->
+      </div>
+
+      <div class="center">
+        <form class="msg_form" id="msg_form">
+          <input class="msg_input" id="msg_input" type="text">
+          <input type="submit" value="send">
+        </form>
+      </div>
     </div>
 
     <script src="{{ url_for('static', filename='js/chatroom.js') }}"></script>

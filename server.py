@@ -1,17 +1,8 @@
-import sqlite3, random, json
+import random, json, asyncio, websockets
 
-from flask import Flask, render_template, request, g, current_app
+from flask import Flask, render_template, request, redirect
 
-def get_db():
-    database = "dev.sqlite3"
-    if "db" not in g:
-        g.db = sqlite3.connect(
-            database,
-            detect_types=sqlite3.PARSE_DECLTYPES
-        )
-        # Return rows that behave like python dicts
-        g.db.row_factory = sqlite3.Row
-    return g.db
+import database
 
 def create_app():
     # Gives current path to flask
@@ -33,13 +24,7 @@ def create_app():
     def games_new_get():
         return render_template("games_new.html")
 
-    @app.post("/games/new")
-    def games_new_post():
-        game = request.form["game"]
-        if game not in ["chatroom", "whist"]:
-            return "Unsupported game {}".format(game), 400
-        db = get_db()
-        cursor = db.cursor()
+    def get_gameID(cursor):
         while True:
             gameID = random.randint(1, 999999)
             existing_game = cursor.execute(
@@ -48,26 +33,47 @@ def create_app():
             ).fetchone()
             if existing_game == None:
                 break
-        config_dict = {}
-        if game == "chatroom":
-            config_dict = {"game": game}
-        elif game == "whist":
-            scoring = request.form["scoring"]
-            length = request.form["length"]
-            config_dict = {
+        return gameID
+
+    def get_config(game, form):
+        config = {"game": game}
+        if game == "whist":
+            config = {
                 "game": game,
-                "scoring": scoring,
-                "length": length,
+                "scoring": form["scoring"],
+                "length": form["length"],
             }
-        config = json.dumps(config_dict)
+        return config
+
+    async def ws_create_game(gameID):
+        async with websockets.connect("ws://127.0.0.1:8001") as ws:
+            data = {
+                "type": "create",
+                "gameID": gameID,
+            }
+            await ws.send(json.dumps(data))
+
+    @app.post("/games/new")
+    def games_new_post():
+        game = request.form["game"]
+        if game not in ["chatroom", "whist"]:
+            return "Unsupported game {}".format(game), 400
+        db = database.get_db()
+        cursor = db.cursor()
+        gameID = get_gameID(cursor)
+        config = get_config(game, request.form)
+        configJSON = json.dumps(config)
         cursor.execute(
             "insert into games(gameID, config) values (?, ?)",
-            [gameID, config]
+            [gameID, configJSON]
         )
-        domain = "localhost:5000"
         db.commit()
+        if game == "chatroom":
+            asyncio.run(ws_create_game(gameID))
+            return redirect(f"/games/join/{gameID}")
+        domain = "localhost:5000"
         return render_template(
-            "games_new_post.html", gameID=gameID, domain=domain, config=config
+            "games_new_post.html", gameID=gameID, domain=domain, config=configJSON
         )
 
     @app.get("/games/join/")
@@ -76,7 +82,7 @@ def create_app():
 
     @app.get("/games/join/<gameID>")
     def games_join_ID_get(gameID):
-        db = get_db()
+        db = database.get_db()
         cursor = db.cursor()
         result = cursor.execute(
             "SELECT * FROM games WHERE gameID = ?",
@@ -86,7 +92,7 @@ def create_app():
             # Not sure this is the correct solution, potentially a redirect
             # could be better. However the address is the same, only the
             # protocol would change, from POST to GET
-            error_msg = f"Error game {gameID} cannot be found"
+            error_msg = f"Error: game {gameID} cannot be found"
             return games_join_get(error_msg=error_msg)
         configJSON = result["config"]
         config = json.loads(configJSON)
@@ -98,4 +104,8 @@ def create_app():
             "games_join_post.html", gameID=gameID, config=configJSON
         )
 
+    database.init_db(app)
+
     return app
+
+app = create_app()
