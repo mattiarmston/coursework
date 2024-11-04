@@ -125,7 +125,12 @@ form {
 }
 
 .msg_list {
-    margin: 1em;
+    /* Approximate height of all other elements */
+    height: calc(100vh - 160px - 3.25em);
+    overflow: scroll;
+    box-sizing: border-box;
+    padding: 1em;
+    margin-bottom: 0.75em;
 }
 
 .msg_list p {
@@ -134,8 +139,10 @@ form {
 
 .msg_form {
     width: 99%;
-    position: absolute;
+    /*
+    position: fixed;
     bottom: 0;
+    */
 }
 
 .msg_input {

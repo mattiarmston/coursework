@@ -41,6 +41,7 @@ function recieveMessages(msg_list, websocket) {
         message = document.createElement("p");
         message.innerHTML = event.username + ": " + event.message
         msg_list.appendChild(message);
+        msg_list.scrollTo(0, msg_list.scrollHeight);
         break;
       default:
         throw new Error(`Unsupported event type '${event.type}'`)
