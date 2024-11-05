@@ -2,9 +2,7 @@ function setUsername(form, input, main) {
   main.style.display = "none";
   form.onsubmit = (e) => {
     e.preventDefault();
-    console.log(username);
     username = input.value;
-    console.log(username);
     form.style.display = "none";
     main.style.display = "unset";
   }
@@ -52,8 +50,13 @@ function recieveMessages(msg_list, websocket) {
 function copyLink(event) {
   event.preventDefault();
   let game_link = document.getElementById("game_link");
-  navigator.clipboard.writeText(game_link.href);
-  game_link.style.setProperty("--message", '"Copied"');
+  let clipboard = navigator.clipboard;
+  if (clipboard != undefined) {
+    clipboard.writeText(game_link.href);
+    game_link.style.setProperty("--message", '"Copied"');
+  } else {
+    game_link.style.setProperty("--message", '"Error"');
+  }
 }
 
 var username = "placeholder";
