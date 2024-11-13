@@ -36,14 +36,15 @@ def create_app():
         return gameID
 
     def get_config(game, form):
-        config = {"game": game}
-        if game == "whist":
-            config = {
-                "game": game,
-                "scoring": form["scoring"],
-                "length": form["length"],
-            }
-        return config
+        match game:
+            case "whist":
+                return {
+                    "game": game,
+                    "scoring": form["scoring"],
+                    "length": form["length"],
+                }
+            case _:
+                return {"game": game}
 
     async def ws_create_game(gameID):
         async with websockets.connect("ws://127.0.0.1:8001") as ws:
@@ -69,6 +70,9 @@ def create_app():
         )
         db.commit()
         if game == "chatroom":
+            asyncio.run(ws_create_game(gameID))
+            return redirect(f"/games/join/{gameID}")
+        elif game == "whist":
             asyncio.run(ws_create_game(gameID))
             return redirect(f"/games/join/{gameID}")
         domain = "localhost:5000"
@@ -98,7 +102,7 @@ def create_app():
         config = json.loads(configJSON)
         if config["game"] == "chatroom":
             return render_template(
-                "chatroom.html", gameID=gameID
+                "chatroom.html", gameID=gameID, config=configJSON
             )
         return render_template(
             "games_join_post.html", gameID=gameID, config=configJSON

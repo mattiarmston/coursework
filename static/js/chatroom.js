@@ -15,7 +15,7 @@ function joinGame(websocket, gameID) {
   }
 }
 
-function sendMessages(form, websocket, gameID) {
+function sendMessages(form, websocket, gameID, config) {
   form.onsubmit = (e) => {
     e.preventDefault()
     let msg_input = document.getElementById("msg_input");
@@ -24,6 +24,7 @@ function sendMessages(form, websocket, gameID) {
     const event = {
       type: "message",
       gameID: gameID,
+      config: config,
       username: username,
       message: message,
     };
@@ -37,12 +38,15 @@ function recieveMessages(msg_list, websocket) {
     switch (event.type) {
       case "message":
         message = document.createElement("p");
-        message.innerHTML = event.username + ": " + event.message
+        message.innerHTML = event.username + ": " + event.message;
         msg_list.appendChild(message);
         msg_list.scrollTo(0, msg_list.scrollHeight);
         break;
+      case "error":
+        console.log(event.message);
+        break;
       default:
-        throw new Error(`Unsupported event type '${event.type}'`)
+        console.log(`Unsupported event type '${event.type}'`)
     }
   }
 }
@@ -70,9 +74,10 @@ function bindFunctions() {
   // localhost needs to be replaced with hostname in production so this requires a better solution
   const websocket = new WebSocket("ws://localhost:8001/");
   const gameID = document.getElementById("gameID").innerHTML;
+  const config = document.getElementById("config").innerHTML;
   setUsername(username_form, username_input, main);
   joinGame(websocket, gameID);
-  sendMessages(msg_form, websocket, gameID);
+  sendMessages(msg_form, websocket, gameID, config);
   recieveMessages(msg_list, websocket);
 
   document.getElementById("game_link").onclick = copyLink;
