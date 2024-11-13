@@ -21,15 +21,21 @@ async def create(websocket, gameID):
 
 async def join(websocket, gameID_str):
     gameID = int(gameID_str)
-    connected = GAMES[gameID]
-    GAMES[gameID] = connected | { websocket }
-    print(f"Player {websocket} joined game {gameID}")
+    try:
+        connected = GAMES[gameID]
+        GAMES[gameID] = connected | { websocket }
+        print(f"New player joined game {gameID}")
+    except KeyError:
+        print(f"Error could not find {gameID}")
 
 async def send_message(gameID_str, eventJSON):
-    connected = GAMES[int(gameID_str)]
-    for websocket in connected:
-        await websocket.send(eventJSON)
-    print(f"Sent {eventJSON} to {connected}")
+    gameID = int(gameID_str)
+    try:
+        connected = GAMES[gameID]
+        for websocket in connected:
+            await websocket.send(eventJSON)
+    except KeyError:
+        print(f"Error could not find {gameID}")
 
 async def main():
     async with websockets.serve(handler, "", 8001):
