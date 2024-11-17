@@ -2,35 +2,33 @@ import json
 
 import games
 
-async def handle_whist(websocket, eventJSON):
-    event = json.loads(eventJSON)
+async def handle_whist(websocket, event):
     match event["type"]:
         case "create":
             pass
         case "join":
             pass
         case _:
-            await error(websocket, eventJSON)
+            await error(websocket, event)
 
-async def waiting(websocket, eventJSON):
-    gameID = int(json.loads(eventJSON)["gameID"])
+async def waiting(websocket, event):
+    gameID = int(event["gameID"])
     try:
         connected = games.GAMES[gameID]
         for websocket in connected:
-            event = {
+            response = {
                 "type": "waiting",
                 "players": len(connected),
                 "players_required": 4
             }
-            await websocket.send(eventJSON)
+            await websocket.send(json.dumps(response))
     except KeyError:
         print(f"Error could not find {gameID}")
-        event = {
+        response = {
             "type": "error",
             "message": f"Game {gameID} does not exist",
         }
-        await websocket.send(json.dumps(event))
-    return
+        await websocket.send(json.dumps(response))
 
-async def error(websocket, eventJSON):
+async def error(websocket, event):
     print("Error handling event")

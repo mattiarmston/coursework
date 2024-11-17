@@ -1,10 +1,13 @@
-
 import websockets, asyncio, json
 
+import database
+import server
 import games
 
 from chatroom import handle_chatroom
 from whist import handle_whist
+
+from websockets.legacy.server import WebSocketServerProtocol
 
 async def handler(websocket):
     async for eventJSON in websocket:
@@ -16,13 +19,20 @@ async def handler(websocket):
             case "join":
                 await join(websocket, event)
             case _:
-                config = json.loads(event["config"])
-                game_handler = await get_game_handler(config["game"])
+                with server.app.app_context():
+                    gameID = int(event["gameID"])
+                    cursor = database.get_db().cursor()
+                    result = cursor.execute(
+                        "SELECT config FROM games WHERE gameID = ?",
+                        [gameID]
+                    ).fetchone()
+                    config = json.loads(result["config"])
+                game_handler = get_game_handler(config["game"])
                 await game_handler(websocket, event)
 
-async def get_game_handler(game_type):
+def get_game_handler(game_type):
     async def error(*_):
-        print(f"Could not find handler for {game_type}")
+        print(f"Error could not find handler for '{game_type}'")
 
     map = {
         "chatroom": handle_chatroom,
@@ -41,7 +51,7 @@ async def create(websocket, event):
 async def join(websocket, event):
     gameID = int(event["gameID"])
     try:
-        connected = games.GAMES[gameID]
+        connected: set[WebSocketServerProtocol] = games.GAMES[gameID]
         games.GAMES[gameID] = connected | { websocket }
         print(f"New player joined game {gameID}")
     except KeyError:

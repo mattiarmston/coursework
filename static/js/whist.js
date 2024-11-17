@@ -68,7 +68,6 @@ function bindFunctions() {
   // localhost needs to be replaced with hostname in production so this requires a better solution
   const websocket = new WebSocket("ws://localhost:8001/");
   const gameID = document.getElementById("gameID").innerHTML;
-  const config = document.getElementById("config").innerHTML;
 
   setUsername(username_form, username_input, main);
   joinGame(websocket, gameID);

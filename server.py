@@ -65,14 +65,11 @@ def create_app():
         config = get_config(game, request.form)
         configJSON = json.dumps(config)
         cursor.execute(
-            "insert into games(gameID, config) values (?, ?)",
+            "INSERT INTO games(gameID, config) VALUES (?, ?)",
             [gameID, configJSON]
         )
         db.commit()
-        if game == "chatroom":
-            asyncio.run(ws_create_game(gameID))
-            return redirect(f"/games/join/{gameID}")
-        elif game == "whist":
+        if game in ["chatroom", "whist"]:
             asyncio.run(ws_create_game(gameID))
             return redirect(f"/games/join/{gameID}")
         domain = "localhost:5000"
@@ -100,13 +97,19 @@ def create_app():
             return games_join_get(error_msg=error_msg)
         configJSON = result["config"]
         config = json.loads(configJSON)
-        if config["game"] == "chatroom":
-            return render_template(
-                "chatroom.html", gameID=gameID, config=configJSON
-            )
-        return render_template(
-            "games_join_post.html", gameID=gameID, config=configJSON
-        )
+        match config["game"]:
+            case "chatroom":
+                return render_template(
+                    "chatroom.html", gameID=gameID
+                )
+            case "whist":
+                return render_template(
+                    "whist.html", gameID=gameID
+                )
+            case _:
+                return render_template(
+                    "games_join_post.html", gameID=gameID, config=configJSON
+                )
 
     database.init_db(app)
 
