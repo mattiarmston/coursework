@@ -2,7 +2,9 @@ import random, json, asyncio, websockets
 
 from flask import Flask, render_template, request, redirect
 
-import database
+import games
+
+print(id(games.GAMES))
 
 def create_app():
     # Gives current path to flask
@@ -24,14 +26,10 @@ def create_app():
     def games_new_get():
         return render_template("games_new.html")
 
-    def get_gameID(cursor):
+    async def get_gameID():
         while True:
             gameID = random.randint(1, 999999)
-            existing_game = cursor.execute(
-                "SELECT gameID FROM games WHERE gameID = ?",
-                [gameID]
-            ).fetchone()
-            if existing_game == None:
+            if gameID not in games.GAMES.keys():
                 break
         return gameID
 
@@ -46,70 +44,72 @@ def create_app():
             case _:
                 return {"game": game}
 
-    async def ws_create_game(gameID):
+    async def ws_create_game(configJSON):
         async with websockets.connect("ws://127.0.0.1:8001") as ws:
             data = {
                 "type": "create",
-                "gameID": gameID,
+                #"gameID": gameID,
+                "config": configJSON,
             }
             await ws.send(json.dumps(data))
+            gameID = await ws.recv()
+            return gameID
 
     @app.post("/games/new")
     def games_new_post():
         game = request.form["game"]
         if game not in ["chatroom", "whist"]:
             return "Unsupported game {}".format(game), 400
-        db = database.get_db()
-        cursor = db.cursor()
-        gameID = get_gameID(cursor)
         config = get_config(game, request.form)
         configJSON = json.dumps(config)
-        cursor.execute(
-            "insert into games(gameID, config) values (?, ?)",
-            [gameID, configJSON]
-        )
-        db.commit()
-        if game == "chatroom":
-            asyncio.run(ws_create_game(gameID))
-            return redirect(f"/games/join/{gameID}")
-        elif game == "whist":
-            asyncio.run(ws_create_game(gameID))
-            return redirect(f"/games/join/{gameID}")
-        domain = "localhost:5000"
-        return render_template(
-            "games_new_post.html", gameID=gameID, domain=domain, config=configJSON
-        )
+        gameID = asyncio.run(ws_create_game(configJSON))
+        return redirect(f"/games/join/{gameID}")
 
     @app.get("/games/join/")
     def games_join_get(error_msg=""):
         return render_template("games_join.html", error=error_msg)
 
+    async def config_from_gameID(gameID):
+        async with websockets.connect("ws://127.0.0.1:8001") as ws:
+            data = {
+                "type": "get_config",
+                "gameID": gameID,
+            }
+            await ws.send(json.dumps(data))
+            configJSON = await ws.recv()
+
     @app.get("/games/join/<gameID>")
     def games_join_ID_get(gameID):
-        db = database.get_db()
-        cursor = db.cursor()
-        result = cursor.execute(
-            "SELECT * FROM games WHERE gameID = ?",
-            [gameID]
-        ).fetchone()
-        if result == None:
-            # Not sure this is the correct solution, potentially a redirect
-            # could be better. However the address is the same, only the
-            # protocol would change, from POST to GET
+        if gameID not in games.GAMES.keys():
             error_msg = f"Error: game {gameID} cannot be found"
             return games_join_get(error_msg=error_msg)
-        configJSON = result["config"]
-        config = json.loads(configJSON)
-        if config["game"] == "chatroom":
-            return render_template(
-                "chatroom.html", gameID=gameID, config=configJSON
-            )
-        return render_template(
-            "games_join_post.html", gameID=gameID, config=configJSON
-        )
-
-    database.init_db(app)
+        config = games.GAMES[gameID]["config"]
+        assert isinstance(config, dict)
+        configJSON = json.dumps(config)
+        match config["game"]:
+            case "chatroom":
+                return render_template(
+                    "chatroom.html", gameID=gameID, config=configJSON
+                )
+            case "whist":
+                return render_template(
+                    "whist.html", gameID=gameID, config=configJSON
+                )
+            case _:
+                return render_template(
+                    "games_join_post.html", gameID=gameID, config=configJSON
+                )
 
     return app
+
+#import ws_server
+#from multiprocessing import Process
+#
+#flask_process = Process(target=create_app)
+#flask_process.start()
+#ws_process = Process(target=ws_server.main)
+#ws_process.start()
+#flask_process.join()
+#ws_process.join()
 
 app = create_app()

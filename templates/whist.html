@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Game {{ gameID }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  </head>
+  <body>
+    <div class="header">
+      <div class="left"><a class="logo logo_corner" href="/">onlinecards.uk</a></div>
+      <div class="center"><h1 class="title">Game {{ gameID }}</h1></div>
+      <div class="right"></div>
+    </div>
+
+    <p style="display: none" id="gameID">{{ gameID }}</p>
+    <p style="display: none" id="config">{{ config }}</p>
+
+    <div class="username">
+      <div class="center">
+        <form id="username_form">
+          <label for="username_input">Username:</label>
+          <div><input id="username_input" type="text" autocomplete="off"></div>
+          <input value="Join" type="submit">
+        </form>
+      </div>
+    </div>
+
+    <div id="main">
+      <div class="center">
+        <div>
+          <a class="tooltip" id="game_link" href="http://localhost:5000/games/join/{{ gameID }}">
+            localhost:5000/games/join/{{ gameID }}</a>
+        </div>
+      </div>
+
+      <div id="content"></div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/whist.js') }}"></script>
+  </body>
+</html>

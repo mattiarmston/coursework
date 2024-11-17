@@ -15,6 +15,29 @@ In order to store the game state, it must first be serialised. This will vary
 from game to game (and some variations may add attributes) so the specific
 requirements for each game are listed below.
 
+## Client-side guidelines
+
+* `"type"` describes the purpose of a message. Certain types of message have set
+meanings that should be respected both by the client and server.
+    * `"game_state"` represents a complete state of the game that replaces any
+      previous state. The front end should render a new view based only on this
+      information. **Note:** this does not have to be a complete description of
+      the game, only the information that this player should have access to. If
+      a player does not know what cards their opponents have, this information
+      should not be part of the game state.
+    * `"update"` represents partial information that should be combined with the
+      current game state to produce a new game state. In a chatroom, the
+      `"game_state"` is the list of all messages but this data does not have to
+      be resent with each new message. It is more efficient just to send the new
+      message separately as an `"update"`. On the client-side the new message
+      can be rendered without having to render all previous messages as well. In
+      cases where combining the `"update"` to create a new game state is complex
+      it may be preferable to send a new `"game_state"` instead.
+* `"gameID"` is only required when sending a message to the server and server
+  responses may not include one. A new Websocket connection should be created
+  for each game so each socket handles a single game. However, `"gameID"` is
+  required when sending messages to the server to improve performance.
+
 ## Chatroom serialisation
 
 A chatroom does not have a 'game state' as card games do, however when joining a
@@ -29,7 +52,6 @@ JSON Example:
 {
     "type": "game_state",
     "gameID": 123456,
-    "config": { ... },
     "messages": [
         {
             "username": string,
@@ -44,11 +66,12 @@ JSON Example:
 
 ```
 {
-    "type": "message",
+    "type": "update",
     "gameID": 123456,
-    "config": { ... },
-    "username": string,
-    "message": string
+    "message": {
+        "username": string,
+        "message": string
+    }
 }
 ```
 
@@ -64,7 +87,6 @@ server to all connected clients.
 {
     "type": "waiting",
     "gameID": 123456,
-    "config": { ... },
     "players": int,
     "players_required": int
 }
@@ -76,7 +98,6 @@ JSON Example:
 {
     "type": "game_state",
     "gameID": 123456,
-    "config": { ... },
     "players": [
         {
             "name": string,
