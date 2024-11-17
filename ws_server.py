@@ -1,8 +1,8 @@
 
-import websockets, asyncio, json, random
+import websockets, asyncio, json
 
 import games
-print(id(games.GAMES))
+
 from chatroom import handle_chatroom
 from whist import handle_whist
 
@@ -12,23 +12,13 @@ async def handler(websocket):
         event = json.loads(eventJSON)
         match event["type"]:
             case "create":
-                gameID = await create(websocket, event)
-                event["gameID"] = str(gameID)
+                await create(websocket, event)
             case "join":
                 await join(websocket, event)
-            case "get_config":
-                await get_config(websocket, event)
-        # This allows each game type to run its own code when a game is created
-        # or a player joins
-        gameID = int(event["gameID"])
-        try:
-            config = games.GAMES[gameID]["config"]
-            assert isinstance(config, dict)
-            game_handler = await get_game_handler(config["game"])
-            game_handler(websocket, event)
-        except KeyError:
-            # This should probably return an error or something
-            pass
+            case _:
+                config = json.loads(event["config"])
+                game_handler = await get_game_handler(config["game"])
+                await game_handler(websocket, event)
 
 async def get_game_handler(game_type):
     async def error(*_):
@@ -44,26 +34,15 @@ async def get_game_handler(game_type):
         return error
 
 async def create(websocket, event):
-    config = json.loads(event["config"])
-    game_data = {
-        "config": config,
-        "connected": set(),
-    }
-    while True:
-        gameID = random.randint(1, 999999)
-        if gameID not in games.GAMES.keys():
-            break
-    games.GAMES[gameID] = game_data
+    gameID = int(event["gameID"])
+    games.GAMES[gameID] = set()
     print(f"Created Game {gameID}")
-    await websocket.send(str(gameID))
-    return gameID
 
 async def join(websocket, event):
     gameID = int(event["gameID"])
     try:
-        connected = games.GAMES[gameID]["connected"]
-        assert isinstance(connected, set)
-        games.GAMES[gameID]["connected"] = connected | { websocket }
+        connected = games.GAMES[gameID]
+        games.GAMES[gameID] = connected | { websocket }
         print(f"New player joined game {gameID}")
     except KeyError:
         print(f"Error could not find {gameID}")
@@ -72,9 +51,6 @@ async def join(websocket, event):
             "message": f"Game {gameID} does not exist",
         }
         await websocket.send(json.dumps(event))
-
-async def get_config(websocket, event):
-    pass
 
 async def main():
     async with websockets.serve(handler, "", 8001):
