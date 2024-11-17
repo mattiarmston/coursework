@@ -4,20 +4,62 @@ from typing import Any
 
 import games
 
+# `CHATROOMS` links from a gameID to a list of messages
+# CHATROOMS = {
+#     gameID: [
+#         {"username": str,
+#          "message": str},
+#         ...
+#     ],
+#     ...
+# }
+CHATROOMS = {}
+
 async def handle_chatroom(websocket, event):
     match event["type"]:
+        case "create":
+            create(websocket, event)
+        case "join":
+            await join(websocket, event)
         case "message":
             await send_message(websocket, event)
         case _:
             await error(websocket, event)
 
-async def send_message(websocket: WebSocketServerProtocol, event: dict[str, Any]) -> None:
+def create(websocket, event):
+    gameID = int(event["gameID"])
+    CHATROOMS[gameID] = []
+
+async def join(websocket, event):
     gameID = int(event["gameID"])
     try:
-        connected = games.GAMES[gameID]
-        eventJSON = json.dumps(event)
+        message_list = CHATROOMS[gameID]
+        response = {
+            "type": "game_state",
+            "message_list": message_list,
+        }
+        await websocket.send(json.dumps(response))
+    except KeyError:
+        print(f"Error could not find chatroom {gameID}")
+
+async def send_message(websocket: WebSocketServerProtocol, event: dict[str, Any]) -> None:
+    gameID = int(event["gameID"])
+    message = {
+        "username": event["username"],
+        "message": event["message"]
+    }
+    try:
+        CHATROOMS[gameID].append(message)
+    except KeyError:
+        print(f"Error could not find chatroom {gameID}")
+    try:
+        connected: set[WebSocketServerProtocol] = games.GAMES[gameID]
+        response = {
+            "type": "update",
+            "message": message
+        }
         for websocket in connected:
-            await websocket.send(eventJSON)
+            await websocket.send(json.dumps(response))
     except KeyError:
         print(f"Error could not find {gameID}")
         event = {

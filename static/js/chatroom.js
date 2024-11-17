@@ -31,15 +31,34 @@ function sendMessages(form, websocket, gameID) {
   }
 }
 
+function renderGameState(msg_list, event) {
+  let message_list = event.message_list
+  let paragraphs = []
+  for (message of message_list) {
+    let paragraph = document.createElement("p");
+    paragraph.innerHTML = message.username + ": " + message.message;
+    paragraphs.push(paragraph);
+  }
+  msg_list.replaceChildren(...paragraphs);
+}
+
+function renderUpdate(msg_list, event) {
+  let message = event.message;
+  let paragraph = document.createElement("p");
+  paragraph.innerHTML = message.username + ": " + message.message;
+  msg_list.appendChild(paragraph);
+  msg_list.scrollTo(0, msg_list.scrollHeight);
+}
+
 function recieveMessages(msg_list, websocket) {
   websocket.onmessage = ({ data }) => {
     const event = JSON.parse(data);
     switch (event.type) {
-      case "message":
-        message = document.createElement("p");
-        message.innerHTML = event.username + ": " + event.message;
-        msg_list.appendChild(message);
-        msg_list.scrollTo(0, msg_list.scrollHeight);
+      case "game_state":
+        renderGameState(msg_list, event)
+        break;
+      case "update":
+        renderUpdate(msg_list, event)
         break;
       case "error":
         console.log(event.message);

@@ -18,17 +18,17 @@ async def handler(websocket):
                 await create(websocket, event)
             case "join":
                 await join(websocket, event)
-            case _:
-                with server.app.app_context():
-                    gameID = int(event["gameID"])
-                    cursor = database.get_db().cursor()
-                    result = cursor.execute(
-                        "SELECT config FROM games WHERE gameID = ?",
-                        [gameID]
-                    ).fetchone()
-                    config = json.loads(result["config"])
-                game_handler = get_game_handler(config["game"])
-                await game_handler(websocket, event)
+
+        with server.app.app_context():
+            gameID = int(event["gameID"])
+            cursor = database.get_db().cursor()
+            result = cursor.execute(
+                "SELECT config FROM games WHERE gameID = ?",
+                [gameID]
+            ).fetchone()
+            config = json.loads(result["config"])
+        game_handler = get_game_handler(config["game"])
+        await game_handler(websocket, event)
 
 def get_game_handler(game_type):
     async def error(*_):
