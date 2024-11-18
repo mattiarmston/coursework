@@ -35,16 +35,16 @@ def create_app():
                 break
         return gameID
 
-    def get_config(game, form):
-        match game:
+    def get_config(game_type, form):
+        match game_type:
             case "whist":
                 return {
-                    "game": game,
+                    "game_type": game_type,
                     "scoring": form["scoring"],
                     "length": form["length"],
                 }
             case _:
-                return {"game": game}
+                return {"game_type": game_type}
 
     async def ws_create_game(gameID):
         async with websockets.connect("ws://127.0.0.1:8001") as ws:
@@ -56,20 +56,20 @@ def create_app():
 
     @app.post("/games/new")
     def games_new_post():
-        game = request.form["game"]
-        if game not in ["chatroom", "whist"]:
-            return "Unsupported game {}".format(game), 400
+        game_type = request.form["game_type"]
+        if game_type not in ["chatroom", "whist"]:
+            return "Unsupported game {}".format(game_type), 400
         db = database.get_db()
         cursor = db.cursor()
         gameID = get_gameID(cursor)
-        config = get_config(game, request.form)
+        config = get_config(game_type, request.form)
         configJSON = json.dumps(config)
         cursor.execute(
             "INSERT INTO games(gameID, config) VALUES (?, ?)",
             [gameID, configJSON]
         )
         db.commit()
-        if game in ["chatroom", "whist"]:
+        if game_type in ["chatroom", "whist"]:
             asyncio.run(ws_create_game(gameID))
             return redirect(f"/games/join/{gameID}")
         domain = "localhost:5000"
@@ -97,7 +97,7 @@ def create_app():
             return games_join_get(error_msg=error_msg)
         configJSON = result["config"]
         config = json.loads(configJSON)
-        match config["game"]:
+        match config["game_type"]:
             case "chatroom":
                 return render_template(
                     "chatroom.html", gameID=gameID

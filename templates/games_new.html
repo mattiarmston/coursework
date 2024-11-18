@@ -14,8 +14,8 @@
     <div class="center">
 
     <form id="settings">
-      <label id="game_label" for="game">Game:</label>
-      <select id="game" name="game" required>
+      <label id="game_label" for="game_type">Game:</label>
+      <select id="game_type" name="game_type" required>
         <option id="default_game" selected disabled hidden>Choose a game</option>
         <option value="chatroom">Chatroom</option>
         <option value="whist">Whist</option>
@@ -25,7 +25,7 @@
     </form>
 
     <form id="chatroom" style="display: none" action="/games/new" method="POST">
-      <select name="game" style="display: none">
+      <select name="game_type" style="display: none">
         <option value="chatroom" selected></option>
       </select>
 
@@ -33,7 +33,7 @@
     </form>
 
     <form id="whist" style="display: none" action="/games/new" method="POST">
-      <select name="game" style="display: none">
+      <select name="game_type" style="display: none">
         <option value="whist" selected></option>
       </select>
 
@@ -59,14 +59,14 @@
     </form>
 
     <form id="promise" style="display: none" action="/games/new" method="POST">
-      <select name="game" style="display: none">
+      <select name="game_type" style="display: none">
         <option value="promise" selected></option>
       </select>
       <div><label>Coming soon!</label></div>
     </form>
 
     <form id="poker" style="display: none" action="/games/new" method="POST">
-      <select name="game" style="display: none">
+      <select name="game_type" style="display: none">
         <option value="poker" selected></option>
       </select>
       <div><label>Coming soon!</label></div>

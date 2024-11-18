@@ -27,7 +27,7 @@ async def handler(websocket):
                 [gameID]
             ).fetchone()
             config = json.loads(result["config"])
-        game_handler = get_game_handler(config["game"])
+        game_handler = get_game_handler(config["game_type"])
         await game_handler(websocket, event)
 
 def get_game_handler(game_type):

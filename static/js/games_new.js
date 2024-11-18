@@ -1,8 +1,8 @@
 
 function updateForm() {
-  let game = document.getElementById("game");
+  let game = document.getElementById("game_type");
   let forms = document.querySelectorAll("form");
-  for (form of forms) {
+  for (let form of forms) {
     if (form.id == "settings") {
       // Do nothing
     } else if (form.id == game.value) {
@@ -14,7 +14,7 @@ function updateForm() {
 }
 
 function bindFunctions() {
-  document.querySelector("#game").onchange = updateForm;
+  document.getElementById("game_type").onchange = updateForm;
 }
 
 bindFunctions();
