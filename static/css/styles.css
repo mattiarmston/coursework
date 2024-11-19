@@ -61,7 +61,7 @@ select {
     margin-bottom: 0.75em;
 }
 
-input {
+input, button {
     background-color: antiquewhite;
     color: rgb(32, 25, 20);
     text-align: center;
@@ -116,6 +116,29 @@ form {
     text-align: center;
     font-weight: bold;
     margin: 0;
+}
+
+.cookie_banner {
+    align-content: center;
+    background: antiquewhite;
+    width: fit-content;
+    border-radius: 0.5em;
+    padding: 0.5em;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+}
+
+.cookie_banner p {
+    display: inline;
+    color: var(--bg-brown);
+    margin: 0;
+}
+
+.cookie_banner button {
+    display: inline;
+    margin: 0 0 0 0.5em;
+    border-color: gray;
 }
 
 .main_link {

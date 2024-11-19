@@ -102,3 +102,5 @@ function bindFunctions() {
 }
 
 bindFunctions();
+
+console.log(document.cookie);
