@@ -1,6 +1,7 @@
 import random, json, asyncio, websockets
 
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, make_response
+from sqlite3 import Connection
 
 import database
 
@@ -24,7 +25,7 @@ def create_app():
     def games_new_get():
         return render_template("games_new.html")
 
-    def get_gameID(cursor):
+    def new_gameID(cursor):
         while True:
             gameID = random.randint(1, 999999)
             existing_game = cursor.execute(
@@ -61,7 +62,7 @@ def create_app():
             return "Unsupported game {}".format(game_type), 400
         db = database.get_db()
         cursor = db.cursor()
-        gameID = get_gameID(cursor)
+        gameID = new_gameID(cursor)
         config = get_config(game_type, request.form)
         configJSON = json.dumps(config)
         cursor.execute(
@@ -81,23 +82,38 @@ def create_app():
     def games_join_get(error_msg=""):
         return render_template("games_join.html", error=error_msg)
 
-    @app.get("/games/join/<gameID>")
-    def games_join_ID_get(gameID):
-        db = database.get_db()
+    def add_userID(userID: str, db: Connection) -> None:
         cursor = db.cursor()
-        result = cursor.execute(
-            "SELECT * FROM games WHERE gameID = ?",
-            [gameID]
-        ).fetchone()
-        if result == None:
-            # Not sure this is the correct solution, potentially a redirect
-            # could be better. However the address is the same, only the
-            # protocol would change, from POST to GET
-            error_msg = f"Error: game {gameID} cannot be found"
-            return games_join_get(error_msg=error_msg)
-        configJSON = result["config"]
-        config = json.loads(configJSON)
-        match config["game_type"]:
+        cursor.execute(
+            "INSERT INTO users(userID) VALUES (?)",
+            [userID]
+        )
+        db.commit()
+        return
+
+    def new_userID(db: Connection) -> str:
+        cursor = db.cursor()
+        while True:
+            userID = random.randint(1, 999999)
+            existing_user = cursor.execute(
+                "SELECT userID FROM users WHERE userID = ?",
+                [userID]
+            ).fetchone()
+            if existing_user == None:
+                break
+        userID = str(userID)
+        add_userID(userID, db)
+        return userID
+
+    def get_userID(request, db: Connection) -> str:
+        userID = request.cookies.get("userID")
+        if userID != None:
+            return userID
+        else:
+            return new_userID(db)
+
+    def get_game_template(game_type, gameID, configJSON=""):
+        match game_type:
             case "chatroom":
                 return render_template(
                     "chatroom.html", gameID=gameID
@@ -108,8 +124,28 @@ def create_app():
                 )
             case _:
                 return render_template(
+                    # This should be removed / replaced later with an error message
                     "games_join_post.html", gameID=gameID, config=configJSON
                 )
+
+    @app.get("/games/join/<gameID>")
+    def games_join_ID_get(gameID):
+        db = database.get_db()
+        cursor = db.cursor()
+        result = cursor.execute(
+            "SELECT * FROM games WHERE gameID = ?",
+            [gameID]
+        ).fetchone()
+        if result == None:
+            return games_join_get(error_msg=f"Error: game {gameID} cannot be found")
+        configJSON = result["config"]
+        config = json.loads(configJSON)
+        userID = get_userID(request, db)
+        response = make_response(
+            get_game_template(config["game_type"], gameID, configJSON)
+        )
+        response.set_cookie("userID", userID)
+        return response
 
     database.init_db(app)
 
