@@ -8,9 +8,13 @@ function setUsername(form, input, main) {
   }
 }
 
-function joinGame(websocket, gameID) {
+function joinGame(websocket, gameID, userID) {
   websocket.onopen = () => {
-    let event = { type: "join", gameID: gameID};
+    let event = {
+      type: "join",
+      gameID: gameID,
+      userID:userID
+    };
     websocket.send(JSON.stringify(event));
   }
 }
@@ -93,8 +97,14 @@ function bindFunctions() {
   // localhost needs to be replaced with hostname in production so this requires a better solution
   const websocket = new WebSocket("ws://localhost:8001/");
   const gameID = document.getElementById("gameID").innerHTML;
+  const userID = document.cookie
+    .split("; ")
+    .find((cookie) => cookie.startsWith("userID="))
+    // find may return nothing so the `?` means undefined is returned rather than an error
+    // split returns an array where we want the second item, right of the `=`
+    ?.split("=")[1];
   setUsername(username_form, username_input, main);
-  joinGame(websocket, gameID);
+  joinGame(websocket, gameID, userID);
   sendMessages(msg_form, websocket, gameID);
   recieveMessages(msg_list, websocket);
 

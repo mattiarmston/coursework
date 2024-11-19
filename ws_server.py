@@ -48,14 +48,17 @@ async def create(websocket, event):
     games.GAMES[gameID] = set()
     print(f"Created Game {gameID}")
 
-async def join(websocket, event):
+async def join(websocket: WebSocketServerProtocol, event):
     gameID = int(event["gameID"])
+    userID = int(event["userID"])
+    # Replace the previous connection, this is desired when a user reloads the page
+    games.USERS[userID] = websocket
     try:
-        connected: set[WebSocketServerProtocol] = games.GAMES[gameID]
-        games.GAMES[gameID] = connected | { websocket }
-        print(f"New player joined game {gameID}")
+        connected: set[int] = games.GAMES[gameID]
+        games.GAMES[gameID] = connected | { userID }
+        print(f"Player {userID} joined game {gameID}")
     except KeyError:
-        print(f"Error could not find {gameID}")
+        print(f"Error could not find game {gameID}")
         event = {
             "type": "error",
             "message": f"Game {gameID} does not exist",

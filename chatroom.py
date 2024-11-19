@@ -3,6 +3,7 @@ from websockets.legacy.server import WebSocketServerProtocol
 from typing import Any
 
 import games
+from games import websockets_from_userIDs
 
 # `CHATROOMS` links from a gameID to a list of messages
 # CHATROOMS = {
@@ -30,7 +31,7 @@ def create(websocket, event):
     gameID = int(event["gameID"])
     CHATROOMS[gameID] = []
 
-async def join(websocket, event):
+async def join(websocket: WebSocketServerProtocol, event):
     gameID = int(event["gameID"])
     try:
         message_list = CHATROOMS[gameID]
@@ -53,7 +54,8 @@ async def send_message(websocket: WebSocketServerProtocol, event: dict[str, Any]
     except KeyError:
         print(f"Error could not find chatroom {gameID}")
     try:
-        connected: set[WebSocketServerProtocol] = games.GAMES[gameID]
+        connected: set[WebSocketServerProtocol] = websockets_from_userIDs(
+            games.GAMES[gameID])
         response = {
             "type": "update",
             "message": message
@@ -61,7 +63,7 @@ async def send_message(websocket: WebSocketServerProtocol, event: dict[str, Any]
         for websocket in connected:
             await websocket.send(json.dumps(response))
     except KeyError:
-        print(f"Error could not find {gameID}")
+        print(f"Error could not find game {gameID}")
         event = {
             "type": "error",
             "message": f"Game {gameID} does not exist",
