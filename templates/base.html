@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>{% block title required%}{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  </head>
+  <body>
+    <div class="header">
+      <div class="left"><a class="logo logo_corner" href="/">onlinecards.uk</a></div>
+      <div class="center"><h1 class="title">{{ self.title() }}</h1></div>
+      <div class="right"></div>
+    </div>
+
+    {% block content %}
+    {% endblock %}
+
+    <script src="{{ url_for('static', filename='js/cookie_banner.js') }}"></script>
+  </body>
+</html>

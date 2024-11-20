@@ -2,6 +2,7 @@ import random, json, asyncio, websockets
 
 from flask import Flask, render_template, request, redirect, make_response
 from sqlite3 import Connection
+from typing import Any
 
 import database
 
@@ -25,7 +26,8 @@ def create_app():
     def games_new_get():
         return render_template("games_new.html")
 
-    def new_gameID(cursor):
+    def new_gameID(db: Connection) -> int:
+        cursor = db.cursor()
         while True:
             gameID = random.randint(1, 999999)
             existing_game = cursor.execute(
@@ -36,7 +38,8 @@ def create_app():
                 break
         return gameID
 
-    def get_config(game_type, form):
+    def create_config(form):
+        game_type = form["game_type"]
         match game_type:
             case "whist":
                 return {
@@ -46,6 +49,19 @@ def create_app():
                 }
             case _:
                 return {"game_type": game_type}
+
+    def create_game() -> int:
+        db = database.get_db()
+        gameID = new_gameID(db)
+        config = create_config(request.form)
+        configJSON = json.dumps(config)
+        cursor = db.cursor()
+        cursor.execute(
+            "INSERT INTO games(gameID, config) VALUES (?, ?)",
+            [gameID, configJSON]
+        )
+        db.commit()
+        return gameID
 
     async def ws_create_game(gameID):
         async with websockets.connect("ws://127.0.0.1:8001") as ws:
@@ -60,57 +76,13 @@ def create_app():
         game_type = request.form["game_type"]
         if game_type not in ["chatroom", "whist"]:
             return "Unsupported game {}".format(game_type), 400
-        db = database.get_db()
-        cursor = db.cursor()
-        gameID = new_gameID(cursor)
-        config = get_config(game_type, request.form)
-        configJSON = json.dumps(config)
-        cursor.execute(
-            "INSERT INTO games(gameID, config) VALUES (?, ?)",
-            [gameID, configJSON]
-        )
-        db.commit()
-        if game_type in ["chatroom", "whist"]:
-            asyncio.run(ws_create_game(gameID))
-            return redirect(f"/games/join/{gameID}")
-        domain = "localhost:5000"
-        return render_template(
-            "games_new_post.html", gameID=gameID, domain=domain, config=configJSON
-        )
+        gameID = create_game()
+        asyncio.run(ws_create_game(gameID))
+        return redirect(f"/games/join/{gameID}")
 
     @app.get("/games/join/")
     def games_join_get(error_msg=""):
         return render_template("games_join.html", error=error_msg)
-
-    def add_userID(userID: str, db: Connection) -> None:
-        cursor = db.cursor()
-        cursor.execute(
-            "INSERT INTO users(userID) VALUES (?)",
-            [userID]
-        )
-        db.commit()
-        return
-
-    def new_userID(db: Connection) -> str:
-        cursor = db.cursor()
-        while True:
-            userID = random.randint(1, 999999)
-            existing_user = cursor.execute(
-                "SELECT userID FROM users WHERE userID = ?",
-                [userID]
-            ).fetchone()
-            if existing_user == None:
-                break
-        userID = str(userID)
-        add_userID(userID, db)
-        return userID
-
-    def get_userID(request, db: Connection) -> str:
-        userID = request.cookies.get("userID")
-        if userID != None:
-            return userID
-        else:
-            return new_userID(db)
 
     def get_game_template(game_type, gameID, configJSON=""):
         match game_type:
@@ -128,8 +100,7 @@ def create_app():
                     "games_join_post.html", gameID=gameID, config=configJSON
                 )
 
-    @app.get("/games/join/<gameID>")
-    def games_join_ID_get(gameID):
+    def config_from_gameID(gameID: int) -> dict[str, Any]:
         db = database.get_db()
         cursor = db.cursor()
         result = cursor.execute(
@@ -137,14 +108,59 @@ def create_app():
             [gameID]
         ).fetchone()
         if result == None:
-            return games_join_get(error_msg=f"Error: game {gameID} cannot be found")
+            raise ValueError
         configJSON = result["config"]
         config = json.loads(configJSON)
-        userID = get_userID(request, db)
-        response = make_response(
-            get_game_template(config["game_type"], gameID, configJSON)
+        return config
+
+    def new_userID(db: Connection) -> int:
+        cursor = db.cursor()
+        while True:
+            userID = random.randint(1, 999999)
+            existing_user = cursor.execute(
+                "SELECT userID FROM users WHERE userID = ?",
+                [userID]
+            ).fetchone()
+            if existing_user == None:
+                break
+        return userID
+
+    def create_user() -> int:
+        db = database.get_db()
+        userID = new_userID(db)
+        username = request.form["username"]
+        cursor = db.cursor()
+        cursor.execute(
+            "INSERT INTO users(userID, username) VALUES (?, ?)",
+            [userID, username]
         )
-        response.set_cookie("userID", userID)
+        db.commit()
+        return userID
+
+    @app.get("/games/join/<gameID>")
+    def games_join_ID_get(gameID):
+        try:
+            config = config_from_gameID(gameID)
+        except ValueError:
+            return games_join_get(error_msg=f"Error: game {gameID} cannot be found")
+        userID = request.cookies.get("userID")
+        if userID == None:
+            return render_template(
+                "username.html"
+            )
+        return get_game_template(config["game_type"], gameID)
+    
+    @app.post("/games/join/<gameID>")
+    def games_join_ID_post(gameID):
+        try:
+            config = config_from_gameID(gameID)
+        except ValueError:
+            return games_join_get(error_msg=f"Error: game {gameID} cannot be found")
+        userID = create_user()
+        response = make_response(
+            get_game_template(config["game_type"], gameID)
+        )
+        response.set_cookie("userID", str(userID))
         return response
 
     database.init_db(app)

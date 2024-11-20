@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Join Game{% endblock %}
+{% block content %}
+  <div class="center">
+    <form method="post">
+      <label for="username">Username:</label>
+      <div><input type="text" id="username" name="username" autocomplete="off"></input></div>
+      <input type="submit" value="Join"></input>
+    </form>
+  </div>
+{% endblock %}

@@ -8,9 +8,9 @@ CREATE TABLE games (
 );
 
 CREATE TABLE users (
-  userID INTEGER PRIMARY KEY
+  userID INTEGER PRIMARY KEY,
+  username TEXT NOT NULL
   /* These are future additions for creating an account and logging in
-  username TEXT,
   password TEXT,
   email TEXT
   */

@@ -1,13 +1,3 @@
-function setUsername(form, input, main) {
-  main.style.display = "none";
-  form.onsubmit = (e) => {
-    e.preventDefault();
-    username = input.value;
-    form.style.display = "none";
-    main.style.display = "unset";
-  }
-}
-
 function joinGame(websocket, gameID, userID) {
   websocket.onopen = () => {
     let event = {
@@ -19,7 +9,7 @@ function joinGame(websocket, gameID, userID) {
   }
 }
 
-function sendMessages(form, websocket, gameID) {
+function sendMessages(form, websocket, gameID, userID) {
   form.onsubmit = (e) => {
     e.preventDefault()
     let msg_input = document.getElementById("msg_input");
@@ -28,7 +18,7 @@ function sendMessages(form, websocket, gameID) {
     const event = {
       type: "message",
       gameID: gameID,
-      username: username,
+      userID: userID,
       message: message,
     };
     websocket.send(JSON.stringify(event));
@@ -86,12 +76,7 @@ function copyLink(event) {
   }
 }
 
-var username = "placeholder";
-
 function bindFunctions() {
-  const username_form = document.getElementById("username_form");
-  const username_input = document.getElementById("username_input");
-  const main = document.getElementById("main");
   const msg_form = document.getElementById("msg_form");
   const msg_list = document.getElementById("msg_list");
   // localhost needs to be replaced with hostname in production so this requires a better solution
@@ -103,9 +88,8 @@ function bindFunctions() {
     // find may return nothing so the `?` means undefined is returned rather than an error
     // split returns an array where we want the second item, right of the `=`
     ?.split("=")[1];
-  setUsername(username_form, username_input, main);
   joinGame(websocket, gameID, userID);
-  sendMessages(msg_form, websocket, gameID);
+  sendMessages(msg_form, websocket, gameID, userID);
   recieveMessages(msg_list, websocket);
 
   document.getElementById("game_link").onclick = copyLink;

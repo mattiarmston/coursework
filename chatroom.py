@@ -2,7 +2,7 @@ import json
 from websockets.legacy.server import WebSocketServerProtocol
 from typing import Any
 
-import games
+import games, server, database
 from games import websockets_from_userIDs
 
 # `CHATROOMS` links from a gameID to a list of messages
@@ -43,10 +43,21 @@ async def join(websocket: WebSocketServerProtocol, event):
     except KeyError:
         print(f"Error could not find chatroom {gameID}")
 
+def username_from_ID(userID: int) -> str:
+    with server.app.app_context():
+        cursor = database.get_db().cursor()
+        result = cursor.execute(
+            "SELECT username FROM users WHERE userID = ?",
+            [userID]
+        ).fetchone()
+        username = result["username"]
+        return username
+
 async def send_message(websocket: WebSocketServerProtocol, event: dict[str, Any]) -> None:
     gameID = int(event["gameID"])
+    userID = int(event["userID"])
     message = {
-        "username": event["username"],
+        "username": username_from_ID(userID),
         "message": event["message"]
     }
     try:
