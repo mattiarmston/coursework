@@ -1,16 +1,9 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Game {{ gameID }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-  </head>
-  <body>
-    <div class="header">
-      <div class="left"><a class="logo logo_corner" href="/">onlinecards.uk</a></div>
-      <div class="center"><h1 class="title">Game {{ gameID }}</h1></div>
-      <div class="right"></div>
-    </div>
-
+{% extends "base.html" %}
+{% block title %}Game {{ gameID }}{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/chatroom.js') }}" defer></script>
+{% endblock %}
+{% block content %}
     <p style="display: none" id="gameID">{{ gameID }}</p>
 
     <div id="main">
@@ -32,8 +25,4 @@
         </form>
       </div>
     </div>
-
-    <script src="{{ url_for('static', filename='js/chatroom.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/cookie_banner.js') }}"></script>
-  </body>
-</html>
+{% endblock %}

@@ -1,17 +1,10 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Joined Game</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-  </head>
-  <body>
-    <div class="header"><a class="logo logo_corner" href="/">onlinecards.uk</a></div>
-
-    <h5>Joined Game:</h5>
-    <p>{{ gameID }}</p>
-    <h5>Config:</h5>
-    <p>{{ config }}</p>
-
-    <script src="{{ url_for('static', filename='js/cookie_banner.js') }}"></script>
-  </body>
-</html>
+{% extends "base.html" %}
+{% block title %}Joined Game{% endblock %}
+{% block scripts %}
+{% endblock %}
+{% block content %}
+<h5>Joined Game:</h5>
+<p>{{ gameID }}</p>
+<h5>Config:</h5>
+<p>{{ config }}</p>
+{% endblock %}

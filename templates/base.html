@@ -1,8 +1,11 @@
 <!DOCTYPE html>
-<html>
+<html lang="en-GB">
   <head>
+    <meta charset="utf-8" />
     <title>{% block title required%}{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    {% block scripts %}{% endblock %}
+    <script src="{{ url_for('static', filename='js/cookie_banner.js') }}" type="module"></script>
   </head>
   <body>
     <div class="header">
@@ -11,9 +14,7 @@
       <div class="right"></div>
     </div>
 
-    {% block content %}
+    {% block content required %}
     {% endblock %}
-
-    <script src="{{ url_for('static', filename='js/cookie_banner.js') }}"></script>
   </body>
 </html>

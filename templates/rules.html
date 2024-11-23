@@ -1,21 +1,10 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Rules</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-  </head>
-  <body>
-    <div class="header">
-      <div class="left"><a class="logo logo_corner" href="/">onlinecards.uk</a></div>
-      <div class="center"><h1 class="title">Rules</h1></div>
-      <div class="right"></div>
-    </div>
-
-    <div class="center">
-      <h2>Classic Games:</h2>
-      <a class="main_link" href="/rules/whist">Whist</a>
-    </div>
-
-    <script src="{{ url_for('static', filename='js/cookie_banner.js') }}"></script>
-  </body>
-</html>
+{% extends "base.html" %}
+{% block title %}Rules{% endblock %}
+{% block scripts %}
+{% endblock %}
+{% block content %}
+<div class="center">
+  <h2>Classic Games:</h2>
+  <a class="main_link" href="/rules/whist">Whist</a>
+</div>
+{% endblock %}

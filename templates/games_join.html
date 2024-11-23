@@ -1,27 +1,16 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Join Game</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-  </head>
-  <body>
-    <div class="header">
-      <div class="left"><a class="logo logo_corner" href="/">onlinecards.uk</a></div>
-      <div class="center"><h1 class="title">Join Game</h1></div>
-      <div class="right"></div>
-    </div>
+{% extends "base.html" %}
+{% block title %}Join Game{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/games_join.js') }}" defer></script>
+{% endblock %}
+{% block content %}
+<div class="center">
+  <form id="join_form" action="/games/join/" method="GET">
+    <div><label>Game ID</label></div>
+    <div><input id="gameID" type="number"></div>
+    <div><input type="submit" value="Join"></div>
+  </form>
 
-    <div class="center">
-      <form id="join_form" action="/games/join/" method="GET">
-        <div><label>Game ID</label></div>
-        <div><input id="gameID" type="number"></div>
-        <div><input type="submit" value="Join"></div>
-      </form>
-
-      <p class="error">{{ error }}</p>
-    </div>
-
-    <script src="{{ url_for('static', filename='js/games_join.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/cookie_banner.js') }}"></script>
-  </body>
-</html>
+  <p class="error">{{ error }}</p>
+</div>
+{% endblock %}
