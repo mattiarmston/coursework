@@ -1,7 +1,8 @@
 import json
 
 import games
-from games import websockets_from_userIDs
+
+WHIST = {}
 
 async def handle_whist(websocket, event):
     match event["type"]:
@@ -15,14 +16,15 @@ async def handle_whist(websocket, event):
 async def waiting(websocket, event):
     gameID = int(event["gameID"])
     try:
-        connected = websockets_from_userIDs(games.GAMES[gameID])
+        connected = games.get_websockets(gameID)
+        response = {
+            "type": "waiting",
+            "players": len(connected),
+            "players_required": 4
+        }
+        responseJSON = json.dumps(response)
         for websocket in connected:
-            response = {
-                "type": "waiting",
-                "players": len(connected),
-                "players_required": 4
-            }
-            await websocket.send(json.dumps(response))
+            await websocket.send(responseJSON)
     except KeyError:
         print(f"Error could not find {gameID}")
         response = {

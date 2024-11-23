@@ -45,17 +45,17 @@ def get_game_handler(game_type):
 
 async def create(websocket, event):
     gameID = int(event["gameID"])
-    games.GAMES[gameID] = set()
+    games.init_game(gameID)
     print(f"Created Game {gameID}")
 
 async def join(websocket: WebSocketServerProtocol, event):
     gameID = int(event["gameID"])
     userID = int(event["userID"])
     # Replace the previous connection, this is desired when a user reloads the page
-    games.USERS[userID] = websocket
+    games.set_websocket(userID, websocket)
     try:
-        connected: set[int] = games.GAMES[gameID]
-        games.GAMES[gameID] = connected | { userID }
+        connected: set[int] = games.get_userIDs(gameID)
+        games.set_userIDs(gameID, connected | { userID })
         print(f"Player {userID} joined game {gameID}")
     except KeyError:
         print(f"Error could not find game {gameID}")

@@ -3,7 +3,6 @@ from websockets.legacy.server import WebSocketServerProtocol
 from typing import Any
 
 import games, server, database
-from games import websockets_from_userIDs
 
 # `CHATROOMS` links from a gameID to a list of messages
 # CHATROOMS = {
@@ -65,8 +64,7 @@ async def send_message(websocket: WebSocketServerProtocol, event: dict[str, Any]
     except KeyError:
         print(f"Error could not find chatroom {gameID}")
     try:
-        connected: set[WebSocketServerProtocol] = websockets_from_userIDs(
-            games.GAMES[gameID])
+        connected: set[WebSocketServerProtocol] = games.get_websockets(gameID)
         response = {
             "type": "update",
             "message": message
