@@ -164,6 +164,12 @@ form {
 }
 
 .player {
+    display: flex;
+    /* flex-flow should be set by js depending on where the most space is */
+    align-items: center;
+}
+
+.seat {
     width: 5em;
     height: 5em;
     margin: 0 auto;

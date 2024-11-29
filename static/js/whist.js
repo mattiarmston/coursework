@@ -10,25 +10,43 @@ function joinGame(websocket, gameID, userID) {
 }
 
 function renderGameState(event) {
-  console.log(event);
-  let messages = []
-  for (player of event.players) {
-    messages.push("username: " + player.username)
+  const tableTemplate = document.getElementById("table");
+  const playerTemplate = document.getElementById("player");
+  const linebreak = document.getElementById("flex_linebreak");
+  let table = tableTemplate.cloneNode(true);
+
+  let players = [];
+  for (let i in event.players) {
+    let player = event.players[i]
+    let wrapper = playerTemplate.cloneNode(true);
+    if (1 <= i && i <= 2) {
+      console.log(i + "column");
+      wrapper.style.flexDirection = "column";
+    } else {
+      console.log(i + "row");
+      wrapper.style.flexDirection = "row";
+    }
+
+    let infoBox = document.createElement("div");
+    infoBox.style.margin = "0.5em";
+    let username = document.createElement("p");
+    username.innerHTML = `Username: ${player.username}`;
+    username.style.margin = "0";
+    infoBox.appendChild(username);
+    wrapper.appendChild(infoBox);
+
+    players.push(wrapper);
   }
 
-  let html = [];
-  for (const message of messages) {
-    let p = document.createElement("p");
-    p.innerHTML = message;
-    html.push(p);
-  }
+  let html = [
+    players[0],
+    linebreak.cloneNode(true),
+    players[1], table, players[2],
+    linebreak.cloneNode(true),
+    players[3]
+  ];
 
-  let center = document.createElement("div");
-  center.className += "center";
-  /*
-  center.replaceChildren(...html);
-  content.appendChild(center);
-  */
+  content.replaceChildren(...html);
 }
 
 function renderWaiting(event) {
