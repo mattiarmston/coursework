@@ -1,38 +1,37 @@
-function setUsername(form, input, main) {
-  main.style.display = "none";
-  form.onsubmit = (e) => {
-    e.preventDefault();
-    username = input.value;
-    form.style.display = "none";
-    main.style.display = "unset";
-  }
-}
-
-function joinGame(websocket, gameID) {
+function joinGame(websocket, gameID, userID) {
   websocket.onopen = () => {
-    let event = { type: "join", gameID: gameID};
+    let event = {
+      type: "join",
+      gameID: gameID,
+      userID: userID,
+    };
     websocket.send(JSON.stringify(event));
   }
 }
 
-function recieveMessages(websocket) {
-  websocket.onmessage = ({ data }) => {
-    const event = JSON.parse(data);
-    switch (event.type) {
-      case "waiting":
-        render_waiting(event);
-        break;
-      case "error":
-        console.log(event.message);
-        break;
-      default:
-        console.log(`Unsupported event type '${event.type}'`)
-        break;
-    }
+function renderGameState(event) {
+  console.log(event);
+  let messages = []
+  for (player of event.players) {
+    messages.push("username: " + player.username)
   }
+
+  let html = [];
+  for (const message of messages) {
+    let p = document.createElement("p");
+    p.innerHTML = message;
+    html.push(p);
+  }
+
+  let center = document.createElement("div");
+  center.className += "center";
+  /*
+  center.replaceChildren(...html);
+  content.appendChild(center);
+  */
 }
 
-function render_waiting(event) {
+function renderWaiting(event) {
   const content = document.getElementById("content");
   const messages = [
     "Waiting for players to join...",
@@ -44,7 +43,31 @@ function render_waiting(event) {
     p.innerHTML = message;
     html.push(p);
   }
-  content.replaceChildren(...html);
+
+  let center = document.createElement("div");
+  center.className += "center";
+  center.replaceChildren(...html);
+  content.replaceChildren(center);
+}
+
+function recieveMessages(websocket) {
+  websocket.onmessage = ({ data }) => {
+    const event = JSON.parse(data);
+    switch (event.type) {
+      case "game_state":
+        renderGameState(event);
+        break;
+      case "waiting":
+        renderWaiting(event);
+        break;
+      case "error":
+        console.log(event.message);
+        break;
+      default:
+        console.log(`Unsupported event type '${event.type}'`)
+        break;
+    }
+  }
 }
 
 function copyLink(event) {
@@ -59,18 +82,18 @@ function copyLink(event) {
   }
 }
 
-var username;
-
 function bindFunctions() {
-  const username_form = document.getElementById("username_form");
-  const username_input = document.getElementById("username_input");
-  const main = document.getElementById("main");
   // localhost needs to be replaced with hostname in production so this requires a better solution
   const websocket = new WebSocket("ws://localhost:8001/");
   const gameID = document.getElementById("gameID").innerHTML;
+  const userID = document.cookie
+    .split("; ")
+    .find((cookie) => cookie.startsWith("userID="))
+    // find may return nothing so the `?` means undefined is returned rather than an error
+    // split returns an array where we want the second item, right of the `=`
+    ?.split("=")[1];
 
-  setUsername(username_form, username_input, main);
-  joinGame(websocket, gameID);
+  joinGame(websocket, gameID, userID);
   recieveMessages(websocket);
 
   document.getElementById("game_link").onclick = copyLink;
