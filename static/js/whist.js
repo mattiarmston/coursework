@@ -9,63 +9,73 @@ function joinGame(websocket, gameID, userID) {
   }
 }
 
-function renderGameState(event) {
-  const tableTemplate = document.getElementById("table");
-  const playerTemplate = document.getElementById("player");
-  const linebreak = document.getElementById("flex_linebreak");
-  let table = tableTemplate.cloneNode(true);
+function renderTable(event) {
+  const tableTemplate = document.getElementById("table_template");
+  const playerTemplate = document.getElementById("player_template");
+  const linebreak = document.getElementById("flex_linebreak_template");
+
+  let table = tableTemplate.content.cloneNode(true).querySelector(".table");
+  table.id = "table";
+  console.log("table", table);
 
   let players = [];
-  for (let i in event.players) {
-    let player = event.players[i]
-    let wrapper = playerTemplate.cloneNode(true);
+  for (let i = 0; i < 4; i++) {
+    let fragment = playerTemplate.content.cloneNode(true);
+    let wrapper = fragment.querySelector(".player")
     if (1 <= i && i <= 2) {
-      console.log(i + "column");
       wrapper.style.flexDirection = "column";
     } else {
-      console.log(i + "row");
       wrapper.style.flexDirection = "row";
     }
 
     let infoBox = document.createElement("div");
     infoBox.style.margin = "0.5em";
-    let username = document.createElement("p");
-    username.innerHTML = `Username: ${player.username}`;
-    username.style.margin = "0";
-    infoBox.appendChild(username);
-    wrapper.appendChild(infoBox);
+    let player = event.players[i]
+    if (player != undefined) {
+      let username = document.createElement("p");
+      username.innerHTML = `Username: ${player.username}`;
+      username.style.margin = "0";
+      infoBox.appendChild(username);
+      wrapper.appendChild(infoBox);
+    }
 
     players.push(wrapper);
   }
 
   let html = [
     players[0],
-    linebreak.cloneNode(true),
+    linebreak.content.cloneNode(true),
     players[1], table, players[2],
-    linebreak.cloneNode(true),
+    linebreak.content.cloneNode(true),
     players[3]
   ];
+
+  return html;
+}
+
+function renderGameState(event) {
+  let html = renderTable(event);
 
   content.replaceChildren(...html);
 }
 
 function renderWaiting(event) {
-  const content = document.getElementById("content");
+  console.log(event);
+  let html = renderTable(event);
+  // Add HTML to the DOM to enable DOM queries to select it
+  content.replaceChildren(...html);
+
+  let table = document.getElementById("table");
   const messages = [
     "Waiting for players to join...",
-    `${event.players} out of ${event.players_required}`,
+    `${event.no_players} out of ${event.players_required}`,
   ];
-  let html = [];
   for (const message of messages) {
     let p = document.createElement("p");
     p.innerHTML = message;
-    html.push(p);
+    p.style.margin = "0.5em";
+    table.appendChild(p);
   }
-
-  let center = document.createElement("div");
-  center.className += "center";
-  center.replaceChildren(...html);
-  content.replaceChildren(center);
 }
 
 function recieveMessages(websocket) {

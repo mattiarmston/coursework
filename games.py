@@ -1,3 +1,5 @@
+import database
+
 from websockets.legacy.server import WebSocketServerProtocol
 
 # `GAMES` links from a `gameID` to a set of connected `userID`s
@@ -40,3 +42,14 @@ def get_websockets(gameID: int) -> set[WebSocketServerProtocol]:
 
 def set_websocket(userID: int, websocket) -> None:
     USERS[userID] = websocket
+
+def get_username(userID: int, context) -> str:
+    with context:
+        cursor = database.get_db().cursor()
+        result = cursor.execute(
+            "SELECT username FROM users WHERE userID = ?",
+            [userID]
+        ).fetchone()
+        username = result["username"]
+        return username
+

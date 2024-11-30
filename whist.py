@@ -1,6 +1,6 @@
 import json
 
-import games
+import games, server
 
 WHIST = {}
 
@@ -23,12 +23,21 @@ async def join(websocket, event):
 
 async def waiting(websocket, event):
     gameID = int(event["gameID"])
+    context = server.app.app_context()
+    usernames: list[str] = [
+        games.get_username(userID, context) for userID in games.get_userIDs(gameID)]
+    print(usernames)
+    players: list[dict[str, str]] = []
+    for username in usernames:
+        players.append({"username": username})
+    print(players)
     try:
         connected = games.get_websockets(gameID)
         response = {
             "type": "waiting",
-            "players": len(connected),
-            "players_required": 4
+            "no_players": len(connected),
+            "players_required": 4,
+            "players": players,
         }
         responseJSON = json.dumps(response)
         for websocket in connected:

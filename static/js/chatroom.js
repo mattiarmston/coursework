@@ -3,7 +3,7 @@ function joinGame(websocket, gameID, userID) {
     let event = {
       type: "join",
       gameID: gameID,
-      userID:userID
+      userID: userID,
     };
     websocket.send(JSON.stringify(event));
   }

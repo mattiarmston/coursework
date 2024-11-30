@@ -42,21 +42,11 @@ async def join(websocket: WebSocketServerProtocol, event):
     except KeyError:
         print(f"Error could not find chatroom {gameID}")
 
-def username_from_ID(userID: int) -> str:
-    with server.app.app_context():
-        cursor = database.get_db().cursor()
-        result = cursor.execute(
-            "SELECT username FROM users WHERE userID = ?",
-            [userID]
-        ).fetchone()
-        username = result["username"]
-        return username
-
 async def send_message(websocket: WebSocketServerProtocol, event: dict[str, Any]) -> None:
     gameID = int(event["gameID"])
     userID = int(event["userID"])
     message = {
-        "username": username_from_ID(userID),
+        "username": games.get_username(userID, server.app.app_context()),
         "message": event["message"]
     }
     try:
