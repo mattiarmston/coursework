@@ -59,17 +59,26 @@ async def test_game_state(websocket, event):
             "players": [
                 {
                     "username": "matti",
+                    "bid": 4,
+                    "tricks_won": 2,
                 },
                 {
                     "username": "test1",
+                    "bid": 2,
+                    "tricks_won": 0,
                 },
                 {
                     "username": "test2",
+                    "bid": 5,
+                    "tricks_won": 3,
                 },
                 {
                     "username": "private",
+                    "bid": 2,
+                    "tricks_won": 1,
                 }
-            ]
+            ],
+            "trump_suit": "H",
         }
         responseJSON = json.dumps(response)
         for websocket in connected:

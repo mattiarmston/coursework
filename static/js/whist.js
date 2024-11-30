@@ -9,6 +9,18 @@ function joinGame(websocket, gameID, userID) {
   }
 }
 
+function addMessages(node, ...messages) {
+  for (const message of messages) {
+    let p = document.createElement("p");
+    if (message.includes("undefined")) {
+      continue;
+    }
+    p.innerHTML = message;
+    p.style.margin = "0";
+    node.appendChild(p);
+  }
+}
+
 function renderTable(event) {
   const tableTemplate = document.getElementById("table_template");
   const playerTemplate = document.getElementById("player_template");
@@ -16,29 +28,17 @@ function renderTable(event) {
 
   let table = tableTemplate.content.cloneNode(true).querySelector(".table");
   table.id = "table";
-  console.log("table", table);
 
   let players = [];
   for (let i = 0; i < 4; i++) {
     let fragment = playerTemplate.content.cloneNode(true);
-    let wrapper = fragment.querySelector(".player")
+    let wrapper = fragment.querySelector(".player");
+    wrapper.id = "player" + i;
     if (1 <= i && i <= 2) {
       wrapper.style.flexDirection = "column";
     } else {
       wrapper.style.flexDirection = "row";
     }
-
-    let infoBox = document.createElement("div");
-    infoBox.style.margin = "0.5em";
-    let player = event.players[i]
-    if (player != undefined) {
-      let username = document.createElement("p");
-      username.innerHTML = `Username: ${player.username}`;
-      username.style.margin = "0";
-      infoBox.appendChild(username);
-      wrapper.appendChild(infoBox);
-    }
-
     players.push(wrapper);
   }
 
@@ -50,32 +50,65 @@ function renderTable(event) {
     players[3]
   ];
 
-  return html;
+  content.replaceChildren(...html);
+}
+
+function renderTableInfoBox(event) {
+  let table = document.getElementById("table");
+
+  let messages = []
+  // I am not sure if this is the place where the code should branch. The
+  // alternative is to have separate methods for rendering a waiting scene and a
+  // normal gameplay scene, as I do currently, and have these either call
+  // different methods or pass arguments to the methods they call (such as this
+  // one) that changes what is outputted, rather than the method deciding
+  // itself.
+  if (event.type === "waiting") {
+    messages = [
+      "Waiting for players to join...",
+      `${event.no_players} out of ${event.players_required}`,
+    ];
+  } else {
+    let map = {
+      "C": "Clubs",
+      "D": "Diamonds",
+      "H": "Hearts",
+      "S": "Spades",
+    };
+    let trump_suit = map[event.trump_suit]
+    messages = [`Trump Suit: ${trump_suit}`];
+  }
+  addMessages(table, ...messages);
+}
+
+function renderPlayerInfoBoxes(event) {
+  for (let i in event.players) {
+    let infoBox = document.createElement("div");
+    infoBox.style.margin = "0.5em";
+    infoBox.className += "info_box";
+
+    let player = event.players[i]
+    addMessages(
+      infoBox,
+      `<strong>${player.username}</strong>`,
+      `Bid: ${player.bid}`,
+      `Tricks Won: ${player.tricks_won}`
+    );
+    let wrapper = document.getElementById("player" + i);
+    wrapper.appendChild(infoBox);
+  }
 }
 
 function renderGameState(event) {
-  let html = renderTable(event);
-
-  content.replaceChildren(...html);
+  renderTable(event);
+  renderTableInfoBox(event);
+  renderPlayerInfoBoxes(event);
 }
 
 function renderWaiting(event) {
-  console.log(event);
-  let html = renderTable(event);
-  // Add HTML to the DOM to enable DOM queries to select it
-  content.replaceChildren(...html);
-
-  let table = document.getElementById("table");
-  const messages = [
-    "Waiting for players to join...",
-    `${event.no_players} out of ${event.players_required}`,
-  ];
-  for (const message of messages) {
-    let p = document.createElement("p");
-    p.innerHTML = message;
-    p.style.margin = "0.5em";
-    table.appendChild(p);
-  }
+  renderTable(event);
+  renderTableInfoBox(event);
+  renderPlayerInfoBoxes(event);
 }
 
 function recieveMessages(websocket) {
