@@ -96,6 +96,26 @@ function renderPlayerInfoBoxes(event) {
   }
 }
 
+function getCardHTML(cardName) {
+  const wrapper = document.createElement("div");
+  let url;
+  if (cardName === "") {
+    url = `/static/cards-fancy/2B.svg`;
+  } else {
+    url = `/static/cards-fancy/${cardName}.svg`;
+  }
+  fetch(url).then((response) => {
+    // Add error handling here later
+    return response.text();
+  }).then((text) => {
+    // The card svg has an approx. aspect ratio of 100:72
+    wrapper.style.width = `${5 * 0.72}em`;
+    wrapper.style.height = "5em";
+    wrapper.innerHTML = text;
+  })
+  return wrapper;
+}
+
 function renderHands(event) {
   const content = document.getElementById("content");
   const linebreak = document.createElement("div");
@@ -110,18 +130,15 @@ function renderHands(event) {
     linebreak.className += "flex_linebreak";
     playerDiv.insertBefore(linebreak, handWrapper);
     for (let card of player.hand) {
-      fetch(`/static/cards-fancy/${card}.svg`).then((response) => {
-        // Add error handling here later
-        return response.text();
-      }).then((text) => {
-        const wrapper = document.createElement("div");
-        // The card svg has an approx. aspect ratio of 100:72
-        wrapper.style.width = `${5 * 0.72}em`;
-        wrapper.style.height = "5em";
-        wrapper.innerHTML = text;
-        handWrapper.appendChild(wrapper);
-      })
+      handWrapper.appendChild(getCardHTML(card));
     }
+  }
+}
+
+function renderCommunityCards(event) {
+  const communityCards = document.querySelector(".community_cards");
+  for (let card of event.community_cards) {
+    communityCards.appendChild(getCardHTML(card));
   }
 }
 
@@ -130,6 +147,7 @@ function renderGameState(event) {
   renderTableInfoBox(event);
   renderPlayerInfoBoxes(event);
   renderHands(event);
+  renderCommunityCards(event);
 }
 
 function renderWaiting(event) {

@@ -62,7 +62,7 @@ async def test_game_state(websocket, event):
                     "bid": 4,
                     "tricks_won": 2,
                     "hand": [
-                        "2H", "3D", "AC", "JC",
+                        "", "", "", "",
                     ],
                 },
                 {
@@ -89,6 +89,9 @@ async def test_game_state(websocket, event):
                         "8D", "9S", "QD", "5C",
                     ],
                 }
+            ],
+            "community_cards": [
+                "AC", "3C", "KD",
             ],
             "trump_suit": "H",
         }
