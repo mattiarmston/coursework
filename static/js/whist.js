@@ -34,11 +34,7 @@ function renderTable(event) {
     let fragment = playerTemplate.content.cloneNode(true);
     let wrapper = fragment.querySelector(".player");
     wrapper.id = "player" + i;
-    if (1 <= i && i <= 2) {
-      wrapper.style.flexDirection = "column";
-    } else {
-      wrapper.style.flexDirection = "row";
-    }
+    wrapper.style.flexFlow = "row wrap";
     players.push(wrapper);
   }
 
@@ -94,8 +90,38 @@ function renderPlayerInfoBoxes(event) {
       `Bid: ${player.bid}`,
       `Tricks Won: ${player.tricks_won}`
     );
-    let wrapper = document.getElementById("player" + i);
-    wrapper.appendChild(infoBox);
+    const wrapper = document.getElementById("player" + i);
+    const hand = wrapper.querySelector(".hand");
+    wrapper.insertBefore(infoBox, hand);
+  }
+}
+
+function renderHands(event) {
+  const content = document.getElementById("content");
+  const linebreak = document.createElement("div");
+  linebreak.className += "flex_linebreak";
+  linebreak.style.marginBottom = "1em";
+  content.appendChild(linebreak);
+  for (let i in event.players) {
+    player = event.players[i];
+    const playerDiv = document.getElementById("player" + i)
+    const handWrapper = playerDiv.querySelector(".hand");
+    const linebreak = document.createElement("div");
+    linebreak.className += "flex_linebreak";
+    playerDiv.insertBefore(linebreak, handWrapper);
+    for (let card of player.hand) {
+      fetch(`/static/cards-fancy/${card}.svg`).then((response) => {
+        // Add error handling here later
+        return response.text();
+      }).then((text) => {
+        const wrapper = document.createElement("div");
+        // The card svg has an approx. aspect ratio of 100:72
+        wrapper.style.width = `${5 * 0.72}em`;
+        wrapper.style.height = "5em";
+        wrapper.innerHTML = text;
+        handWrapper.appendChild(wrapper);
+      })
+    }
   }
 }
 
@@ -103,6 +129,7 @@ function renderGameState(event) {
   renderTable(event);
   renderTableInfoBox(event);
   renderPlayerInfoBoxes(event);
+  renderHands(event);
 }
 
 function renderWaiting(event) {

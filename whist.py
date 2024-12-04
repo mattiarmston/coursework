@@ -61,21 +61,33 @@ async def test_game_state(websocket, event):
                     "username": "matti",
                     "bid": 4,
                     "tricks_won": 2,
+                    "hand": [
+                        "2H", "3D", "AC", "JC",
+                    ],
                 },
                 {
                     "username": "test1",
                     "bid": 2,
                     "tricks_won": 0,
+                    "hand": [
+                        "6H", "JD", "7H", "3S",
+                    ],
                 },
                 {
                     "username": "test2",
                     "bid": 5,
                     "tricks_won": 3,
+                    "hand": [
+                        "KC", "2C", "8S", "TS",
+                    ],
                 },
                 {
                     "username": "private",
                     "bid": 2,
                     "tricks_won": 1,
+                    "hand": [
+                        "8D", "9S", "QD", "5C",
+                    ],
                 }
             ],
             "trump_suit": "H",

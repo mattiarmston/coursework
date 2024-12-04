@@ -172,12 +172,18 @@ form {
     display: flex;
     /* flex-flow should be set by js depending on where the most space is */
     align-items: center;
+    width: min-content;
 }
 
 .seat {
     width: 5em;
     height: 5em;
-    margin: 0 auto;
+    margin: 0;
+}
+
+.hand {
+    display: flex;
+    flex-flow: row nowrap;
 }
 
 .flex_linebreak {

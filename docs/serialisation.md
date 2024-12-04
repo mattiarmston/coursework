@@ -1,19 +1,22 @@
 # Serialisation
 
-Internally the state of every game will need to be recorded and managed. This
-will be done using a python dictionary that can be converted to JSON and sent
-over the internet. Once the front end has received it, client side JavaScript
-will convert it into HTML (this could be replaced with a tool such as hotwire in
-the future).
+Internally the state of every game will need to be recorded and managed, which
+means it first must be serialised. This process will vary from game to game (and
+some variations may add data that needs to be tracked), so the specifics for
+each game type are detailed below.
 
-When updating the game state, this should be done using a series of update
-functions. Some of these will take user input as an argument and others may use
-randomness, however these should be mathematically pure functions wherever
-possible.
+Once serialised, the game state will be stored using a python dictionary and
+updated as the game progresses. To update the game state the server should use a
+series of update functions. Some of these will take user input as an argument
+and others may use randomness, however these should be mathematically pure
+functions wherever possible.
 
-In order to store the game state, it must first be serialised. This will vary
-from game to game (and some variations may add attributes) so the specific
-requirements for each game are listed below.
+To update the user interface the server must first determine what information
+each player should have access to -- for example Player 1 cannot see Player 2's
+hand of cards. Once this is done the game state should be converted to JSON and
+sent over the internet. Once the front end has received it, client side
+JavaScript will convert it into HTML which can be displayed by the browser (this
+could be replaced with a tool such as hotwire in the future).
 
 ## Client-side guidelines
 
@@ -87,8 +90,14 @@ server to all connected clients.
 {
     "type": "waiting",
     "gameID": 123456,
-    "players": int,
+    "no_players": int,
     "players_required": int
+    "players": [
+        {
+            "username": string,
+        },
+        ...
+    ]
 }
 ```
 
@@ -106,7 +115,8 @@ JSON Example:
             "hand": ["AH", "3C", "8D", "JH", "TC"],
         },
         ...
-    ]
+    ],
+    "trump_suit": string
 }
 ```
 
