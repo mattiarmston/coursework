@@ -18,7 +18,7 @@ sent over the internet. Once the front end has received it, client side
 JavaScript will convert it into HTML which can be displayed by the browser (this
 could be replaced with a tool such as hotwire in the future).
 
-## Client-side guidelines
+## Metadata
 
 * `"type"` describes the purpose of a message. Certain types of message have set
 meanings that should be respected both by the client and server.
@@ -27,19 +27,55 @@ meanings that should be respected both by the client and server.
       information. **Note:** this does not have to be a complete description of
       the game, only the information that this player should have access to. If
       a player does not know what cards their opponents have, this information
-      should not be part of the game state.
+      should not be part of the game state sent to them.
     * `"update"` represents partial information that should be combined with the
       current game state to produce a new game state. In a chatroom, the
       `"game_state"` is the list of all messages but this data does not have to
       be resent with each new message. It is more efficient just to send the new
       message separately as an `"update"`. On the client-side the new message
-      can be rendered without having to render all previous messages as well. In
-      cases where combining the `"update"` to create a new game state is complex
-      it may be preferable to send a new `"game_state"` instead.
+      can be rendered without having to re-render all previous messages as well.
+      In cases where combining the `"update"` to create a new game state is
+      complex it may be preferable to send a new `"game_state"` instead.
+    * `"waiting"` represents a game having been created but lacking the required
+      number of players to start. In Whist, the game requires exactly 4 players
+      so a `"waiting"` state is broadcast when a player joins, but there is
+      still less than 4.
+    * `"error"` represents an server-side error. Specific error types, messages
+      and handling should be defined by the game.
+    * Other types may be defined and used by a specific game when none of the
+      above apply.
 * `"gameID"` is only required when sending a message to the server and server
   responses may not include one. A new Websocket connection should be created
   for each game so each socket handles a single game. However, `"gameID"` is
   required when sending messages to the server to improve performance.
+
+## Cards
+
+Cards are serialised as 2 character strings and a hand of cards is a list of
+strings. Cards from 1-9 are serialised as their face value + the first letter of
+their suit e.g. the 6 of Clubs is `6C`, the 2 of Spades is `2S`, etc. The ace is
+`A` + its suit and the King, Queen, Jack and Ten are `K`, `Q`, `J`, and `T`
+respectively. These names match the filenames found in `static/cards-fancy`
+which should be used as a reference.
+
+However in almost all card games players have cards that are hidden from the
+rest of the table. These are represented as an empty string (`""`) and should be
+rendered as the back of a card. The front end should request the file `1B.svg`
+or `2B.svg` which are different coloured card backs.
+
+The front end should prefer to render a card face up and should not check which
+cards a user should be able to see. This should be delegated to the back-end.
+There are a variety of reasons for this including:
+* Different variations may reveal / hide cards that would normally be visible /
+  hidden and adding checks for every variation could add significant complexity.
+* Any logic that checks if cards should be visible will increase the complexity
+  and size of the renderer.
+* Rendering every card possible will make it more obvious when the back end has
+  a bug sending data that the player should not have access to.
+* Forcing the back end to send only the information that a user should know will
+  make cheating more difficult. If a cheater can read the JSON of the game state
+  and discover normally hidden data (such as another player's cards), they can
+  use this to their advantage.
 
 ## Chatroom serialisation
 
