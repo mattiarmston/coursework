@@ -135,19 +135,11 @@ function renderHands(event) {
   }
 }
 
-function renderCommunityCards(event) {
-  const communityCards = document.querySelector(".community_cards");
-  for (let card of event.community_cards) {
-    communityCards.appendChild(getCardHTML(card));
-  }
-}
-
 function renderGameState(event) {
   renderTable(event);
   renderTableInfoBox(event);
   renderPlayerInfoBoxes(event);
   renderHands(event);
-  renderCommunityCards(event);
 }
 
 function renderWaiting(event) {

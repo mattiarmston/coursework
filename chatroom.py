@@ -46,7 +46,7 @@ async def send_message(websocket: WebSocketServerProtocol, event: dict[str, Any]
     gameID = int(event["gameID"])
     userID = int(event["userID"])
     message = {
-        "username": games.get_username(userID, server.app.app_context()),
+        "username": games.get_username(userID, server.app),
         "message": event["message"]
     }
     try:
@@ -54,7 +54,7 @@ async def send_message(websocket: WebSocketServerProtocol, event: dict[str, Any]
     except KeyError:
         print(f"Error could not find chatroom {gameID}")
     try:
-        connected: set[WebSocketServerProtocol] = games.get_websockets(gameID)
+        connected: list[WebSocketServerProtocol] = list(games.get_websockets(gameID).values())
         response = {
             "type": "update",
             "message": message

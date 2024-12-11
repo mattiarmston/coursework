@@ -31,11 +31,11 @@ def set_userIDs(gameID: int, userIDs: set[int]) -> None:
     GAMES[gameID] = userIDs
     return
 
-def get_websockets(gameID: int) -> set[WebSocketServerProtocol]:
-    websockets = set()
+def get_websockets(gameID: int) -> dict[int, WebSocketServerProtocol]:
+    websockets = {}
     for userID in get_userIDs(gameID):
         try:
-            websockets.add(USERS[userID])
+            websockets[userID] = USERS[userID]
         except KeyError:
             print(f"Error: could not find userID {userID}")
     return websockets
@@ -43,8 +43,8 @@ def get_websockets(gameID: int) -> set[WebSocketServerProtocol]:
 def set_websocket(userID: int, websocket) -> None:
     USERS[userID] = websocket
 
-def get_username(userID: int, context) -> str:
-    with context:
+def get_username(userID: int, app) -> str:
+    with app.app_context():
         cursor = database.get_db().cursor()
         result = cursor.execute(
             "SELECT username FROM users WHERE userID = ?",
