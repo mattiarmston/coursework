@@ -21,7 +21,20 @@ function addMessages(node, ...messages) {
   }
 }
 
-function renderTable(event) {
+function rotatePlayers(event) {
+  // Rotate array in place so that the current player is at the index 0
+  // Future code can use this fact to position players as it wishes
+  let currentPlayer = event.players[event.current_user]
+  if (currentPlayer == undefined) {
+    return;
+  }
+  while (event.players[0] != currentPlayer) {
+    let rem = event.players.shift();
+    event.players.push(rem);
+  }
+}
+
+function renderTableAndPlayers(event) {
   const tableTemplate = document.getElementById("table_template");
   const playerTemplate = document.getElementById("player_template");
   const linebreak = document.getElementById("flex_linebreak_template");
@@ -38,12 +51,17 @@ function renderTable(event) {
     players.push(wrapper);
   }
 
+  // Players should be ordered clockwise around the table
+  //          player 2
+  // player 1          player 3
+  //          player 0
+  // The current user (player 0) should be at the bottom with the table 'infront' of them
   let html = [
-    players[0],
+    players[2],
     linebreak.content.cloneNode(true),
-    players[1], table, players[2],
+    players[1], table, players[3],
     linebreak.content.cloneNode(true),
-    players[3]
+    players[0]
   ];
 
   content.replaceChildren(...html);
@@ -136,14 +154,16 @@ function renderHands(event) {
 }
 
 function renderGameState(event) {
-  renderTable(event);
+  rotatePlayers(event);
+  renderTableAndPlayers(event);
   renderTableInfoBox(event);
   renderPlayerInfoBoxes(event);
   renderHands(event);
 }
 
 function renderWaiting(event) {
-  renderTable(event);
+  rotatePlayers(event);
+  renderTableAndPlayers(event);
   renderTableInfoBox(event);
   renderPlayerInfoBoxes(event);
 }
