@@ -35,18 +35,13 @@ def create(websocket, event):
     }
     WHIST[gameID] = game_state
 
-def random_card() -> str:
-    suit = random.choice(["C", "D", "H", "S"])
-    rank = random.choice([str(i) for i in range(2, 10) ] + ["T", "J", "Q", "K", "A"])
-    return rank + suit
-
 async def join(websocket, event):
     gameID = int(event["gameID"])
     userID = int(event["userID"])
     try:
         connected: set[WebSocketServerProtocol] = set(games.get_websockets(gameID).values())
     except KeyError:
-        print(f"Error could not find {gameID}")
+        print(f"Error could not find whist game {gameID}")
         response = {
             "type": "error",
             "message": f"Game {gameID} does not exist",
@@ -146,8 +141,9 @@ def censor_game_state(game_state: dict[str, Any], userID: int) -> str:
     print(f"{userID} {censored_state}")
     return json.dumps(censored_state)
 
-async def broadcast_game_state(gameID: int) -> None:
-    game_state = WHIST[gameID]
+async def broadcast_game_state(gameID: int, game_state: dict[str, Any] = {}) -> None:
+    if game_state == {}:
+        game_state = WHIST[gameID]
     print(f"{game_state}")
     for userID, websocket in games.get_websockets(gameID).items():
         game_stateJSON = censor_game_state(game_state, userID)
@@ -155,39 +151,34 @@ async def broadcast_game_state(gameID: int) -> None:
 
 async def waiting(websocket, event):
     gameID = int(event["gameID"])
-    usernames: list[str] = [
-        games.get_username(userID, server.app) 
-        for userID in games.get_userIDs(gameID)
-    ]
-    players: list[dict[str, Any]] = []
-    for username in usernames:
-        players.append({"username": username})
-    print(players)
     try:
-        connected: set[WebSocketServerProtocol] = set(games.get_websockets(gameID).values())
+        players: list[dict[str, Any]] = WHIST[gameID]["players"]
         response = {
             "type": "waiting",
-            "no_players": len(connected),
+            "no_players": len(players),
             "players_required": 4,
             "players": players,
         }
-        responseJSON = json.dumps(response)
-        for websocket in connected:
-            await websocket.send(responseJSON)
+        await broadcast_game_state(gameID, response)
     except KeyError:
-        print(f"Error could not find {gameID}")
+        print(f"Error could not find whist game {gameID}")
         response = {
             "type": "error",
             "message": f"Game {gameID} does not exist",
         }
         await websocket.send(json.dumps(response))
 
+def random_card() -> str:
+    suit = random.choice(["C", "D", "H", "S"])
+    rank = random.choice([str(i) for i in range(2, 10) ] + ["T", "J", "Q", "K", "A"])
+    return rank + suit
+
 async def test_game_state(websocket, event):
     gameID = int(event["gameID"])
     try:
         connected: set[WebSocketServerProtocol] = set(games.get_websockets(gameID).values())
     except KeyError:
-        print(f"Error could not find {gameID}")
+        print(f"Error could not find whist game {gameID}")
         response = {
             "type": "error",
             "message": f"Game {gameID} does not exist",
