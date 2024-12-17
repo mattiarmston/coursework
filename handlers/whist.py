@@ -1,9 +1,10 @@
 import json
 import random
 
-import games, server
+import handlers.games as games
+import server
 
-from typing import Any
+from typing import Any, Callable
 from websockets import WebSocketServerProtocol
 
 # `WHIST` links from a gameID to a whist game state
@@ -69,12 +70,96 @@ async def join(websocket, event):
         return
     await test_game_state(websocket, event)
 
+def censor_game_state(game_state: dict[str, Any], userID: int) -> str:
+    def default(
+        censored_state: dict[str, Any],
+        game_state: dict[str, Any],
+        key: str,
+        userID: int,
+    ) -> None:
+        censored_state[key] = game_state[key]
+
+    def censor_hand(
+        censored_player: dict[str, Any],
+        player: dict[str, Any],
+        hand: str,
+        userID: int,
+    ) -> None:
+        if player["userID"] == userID:
+            censored_player[hand] = player[hand]
+        else:
+            censored_player[hand] = [ "" for _ in player[hand] ]
+
+    def censor_userID(
+        censored_player: dict[str, Any],
+        player: dict[str, Any],
+        userID: str,
+        current_userID: int,
+    ) -> None:
+        censored_player["username"] = games.get_username(player[userID], server.app)
+
+    def censor_player(
+        censored_players: list[dict[str, Any]],
+        player: dict[str, Any],
+        _,
+        userID: int,
+    ) -> None:
+        censored_player: dict[str, Any] = {}
+        censor: dict[str, Callable] = {
+            "hand": censor_hand,
+            "userID": censor_userID,
+        }
+        key: str
+        for key in player:
+            if key not in censor:
+                default(censored_player, player, key, userID)
+                continue
+            func = censor[key]
+            func(censored_player, player, key, userID)
+        censored_players.append(censored_player)
+
+    def censor_players(
+        censored_state: dict[str, Any],
+        game_state: dict[str, Any],
+        players: str,
+        userID: int,
+    ) -> None:
+        censored_state["players"] = []
+        player: dict[str, Any]
+        for player in game_state[players]:
+            censor_player(censored_state["players"], player, "", userID)
+            if player["userID"] == userID:
+                censored_state["current_user"] = game_state["players"].index(player)
+
+    censored_state: dict[str, Any] = {"type": "game_state"}
+    censor: dict[str, Callable] = {
+        "players": censor_players,
+    }
+    key: str
+    for key in game_state:
+        if key not in censor:
+            default(censored_state, game_state, key, userID)
+            continue
+        func = censor[key]
+        func(censored_state, game_state, key, userID)
+    print()
+    print(f"{userID} {censored_state}")
+    return json.dumps(censored_state)
+
+async def broadcast_game_state(gameID: int) -> None:
+    game_state = WHIST[gameID]
+    print(f"{game_state}")
+    for userID, websocket in games.get_websockets(gameID).items():
+        game_stateJSON = censor_game_state(game_state, userID)
+        await websocket.send(game_stateJSON)
+
 async def waiting(websocket, event):
     gameID = int(event["gameID"])
     usernames: list[str] = [
-        games.get_username(userID, server.app) for userID in games.get_userIDs(gameID)]
-    print(usernames)
-    players: list[dict[str, str]] = []
+        games.get_username(userID, server.app) 
+        for userID in games.get_userIDs(gameID)
+    ]
+    players: list[dict[str, Any]] = []
     for username in usernames:
         players.append({"username": username})
     print(players)
@@ -96,39 +181,6 @@ async def waiting(websocket, event):
             "message": f"Game {gameID} does not exist",
         }
         await websocket.send(json.dumps(response))
-
-def game_state_for_user(game_state: dict[str, Any], userID: int) -> str:
-    copy: dict[str, Any] = {"type": "game_state"}
-    for key, value in game_state.items():
-        if key != "players":
-            copy[key] = value
-            continue
-        if key == "players":
-            copy["players"] = []
-            for player in game_state["players"]:
-                copy_player = {}
-                for k, v in player.items():
-                    if k not in ["hand", "userID"]:
-                        copy_player[k] = v
-                        continue
-                    if k == "userID":
-                        copy_player["username"] = games.get_username(v, server.app)
-                        continue
-                    if player["userID"] == userID:
-                        copy_player["hand"] = player["hand"]
-                        copy["current_user"] = game_state["players"].index(player)
-                    else:
-                        copy_player["hand"] = [ "" for _ in player["hand"] ]
-                    copy["players"].append(copy_player)
-    print(f"{userID} {copy}")
-    return json.dumps(copy)
-
-async def broadcast_game_state(gameID: int) -> None:
-    game_state = WHIST[gameID]
-    print(f"{game_state}")
-    for userID, websocket in games.get_websockets(gameID).items():
-        game_stateJSON = game_state_for_user(game_state, userID)
-        await websocket.send(game_stateJSON)
 
 async def test_game_state(websocket, event):
     gameID = int(event["gameID"])

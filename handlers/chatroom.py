@@ -2,7 +2,8 @@ import json
 from websockets.legacy.server import WebSocketServerProtocol
 from typing import Any
 
-import games, server, database
+import server
+import handlers.games as games
 
 # `CHATROOMS` links from a gameID to a list of messages
 # CHATROOMS = {

@@ -2,10 +2,10 @@ import websockets, asyncio, json
 
 import database
 import server
-import games
+import handlers.games as games
 
-from chatroom import handle_chatroom
-from whist import handle_whist
+from handlers.chatroom import handle_chatroom
+from handlers.whist import handle_whist
 
 from websockets.legacy.server import WebSocketServerProtocol
 
