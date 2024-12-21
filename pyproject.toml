@@ -1,0 +1,23 @@
+[project]
+name = "onlinecards"
+version = "0.0.5"
+authors = [
+  { name="Matti Armston", email="matti.armston@gmail.com" },
+]
+description = "A website to play cards online with friends"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
+    "Operating System :: OS Independent",
+    "Framework :: Flask",
+]
+
+[project.urls]
+Homepage = "https://github.com/mattiarmston/onlinecards"
+Issues = "https://github.com/mattiarmston/onlinecards/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
