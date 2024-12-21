@@ -1,9 +1,9 @@
 import websockets, asyncio, json
 
 import database
-import server
-import handlers.games as games
+from server import app
 
+import handlers.utils as utils
 from handlers.chatroom import handle_chatroom
 from handlers.whist import handle_whist
 
@@ -19,7 +19,7 @@ async def handler(websocket):
             case "join":
                 await join(websocket, event)
 
-        with server.app.app_context():
+        with app.app_context():
             gameID = int(event["gameID"])
             cursor = database.get_db().cursor()
             result = cursor.execute(
@@ -45,17 +45,17 @@ def get_game_handler(game_type):
 
 async def create(websocket, event):
     gameID = int(event["gameID"])
-    games.init_game(gameID)
+    utils.init_game(gameID)
     print(f"Created Game {gameID}")
 
 async def join(websocket: WebSocketServerProtocol, event):
     gameID = int(event["gameID"])
     userID = int(event["userID"])
     # Replace the previous connection, this is desired when a user reloads the page
-    games.set_websocket(userID, websocket)
+    utils.set_websocket(userID, websocket)
     try:
-        connected: set[int] = games.get_userIDs(gameID)
-        games.set_userIDs(gameID, connected | { userID })
+        connected: set[int] = utils.get_userIDs(gameID)
+        utils.set_userIDs(gameID, connected | { userID })
         print(f"Player {userID} joined game {gameID}")
     except KeyError:
         print(f"Error could not find game {gameID}")

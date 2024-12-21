@@ -1,11 +1,13 @@
 import json
 import random
 
-import handlers.games as games
+import handlers.utils as utils
 import server
 
 from typing import Any, Callable
 from websockets import WebSocketServerProtocol
+
+# from .. import games.whist
 
 # `WHIST` links from a gameID to a whist game state
 # WHIST = {
@@ -39,7 +41,7 @@ async def join(websocket, event):
     gameID = int(event["gameID"])
     userID = int(event["userID"])
     try:
-        connected: set[WebSocketServerProtocol] = set(games.get_websockets(gameID).values())
+        connected: set[WebSocketServerProtocol] = set(utils.get_websockets(gameID).values())
     except KeyError:
         print(f"Error could not find whist game {gameID}")
         response = {
@@ -60,7 +62,7 @@ async def join(websocket, event):
         }
         game_state["players"].append(player)
     # 2 players should not be able to join simultaneously so this should work
-    if len(games.get_userIDs(gameID)) != 4:
+    if len(utils.get_userIDs(gameID)) != 4:
         await waiting(websocket, event)
         return
     await test_game_state(websocket, event)
@@ -91,7 +93,7 @@ def censor_game_state(game_state: dict[str, Any], userID: int) -> str:
         userID: str,
         current_userID: int,
     ) -> None:
-        censored_player["username"] = games.get_username(player[userID], server.app)
+        censored_player["username"] = utils.get_username(player[userID], server.app)
 
     def censor_player(
         censored_players: list[dict[str, Any]],
@@ -145,7 +147,7 @@ async def broadcast_game_state(gameID: int, game_state: dict[str, Any] = {}) -> 
     if game_state == {}:
         game_state = WHIST[gameID]
     print(f"{game_state}")
-    for userID, websocket in games.get_websockets(gameID).items():
+    for userID, websocket in utils.get_websockets(gameID).items():
         game_stateJSON = censor_game_state(game_state, userID)
         await websocket.send(game_stateJSON)
 
@@ -176,7 +178,7 @@ def random_card() -> str:
 async def test_game_state(websocket, event):
     gameID = int(event["gameID"])
     try:
-        connected: set[WebSocketServerProtocol] = set(games.get_websockets(gameID).values())
+        connected: set[WebSocketServerProtocol] = set(utils.get_websockets(gameID).values())
     except KeyError:
         print(f"Error could not find whist game {gameID}")
         response = {
