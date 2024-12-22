@@ -114,7 +114,7 @@ function renderPlayerInfoBoxes(event) {
   }
 }
 
-function getCardHTML(cardName) {
+function getCardHTML(cardName, i) {
   const wrapper = document.createElement("div");
   let url;
   if (cardName === "") {
@@ -129,6 +129,9 @@ function getCardHTML(cardName) {
     // The card svg has an approx. aspect ratio of 100:72
     wrapper.style.width = `${5 * 0.72}em`;
     wrapper.style.height = "5em";
+    if (i != 0) {
+      wrapper.style.marginLeft = `-${5 * 0.72 * 0.8}em`;
+    }
     wrapper.innerHTML = text;
   })
   return wrapper;
@@ -142,13 +145,18 @@ function renderHands(event) {
   content.appendChild(linebreak);
   for (let i in event.players) {
     player = event.players[i];
+    if (player.hand == undefined) {
+      continue;
+    }
     const playerDiv = document.getElementById("player" + i)
     const handWrapper = playerDiv.querySelector(".hand");
     const linebreak = document.createElement("div");
     linebreak.className += "flex_linebreak";
     playerDiv.insertBefore(linebreak, handWrapper);
+    let j = 0;
     for (let card of player.hand) {
-      handWrapper.appendChild(getCardHTML(card));
+      handWrapper.appendChild(getCardHTML(card, j));
+      j++;
     }
   }
 }
