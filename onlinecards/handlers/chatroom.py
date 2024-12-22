@@ -2,7 +2,7 @@ import json
 from websockets.legacy.server import WebSocketServerProtocol
 from typing import Any
 
-import server
+from server import app
 import handlers.utils as utils
 
 # `CHATROOMS` links from a gameID to a list of messages
@@ -47,7 +47,7 @@ async def send_message(websocket: WebSocketServerProtocol, event: dict[str, Any]
     gameID = int(event["gameID"])
     userID = int(event["userID"])
     message = {
-        "username": utils.get_username(userID, server.app),
+        "username": utils.get_username(userID, app),
         "message": event["message"]
     }
     try:
