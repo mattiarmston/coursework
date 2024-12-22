@@ -6,6 +6,11 @@ from typing import Callable, Any
 import server
 import handlers.utils as utils
 
+async def broadcast_game_state(gameID: int, game_state: dict[str, Any]) -> None:
+    for userID, websocket in utils.get_websockets(gameID).items():
+        game_stateJSON = censor_game_state(game_state, userID)
+        await websocket.send(game_stateJSON)
+
 def censor_game_state(game_state: dict[str, Any], userID: int) -> str:
     def default(
         censored_state: dict[str, Any],
@@ -14,6 +19,14 @@ def censor_game_state(game_state: dict[str, Any], userID: int) -> str:
         userID: int,
     ) -> None:
         censored_state[key] = game_state[key]
+
+    def ignore(
+        censored_state: dict[str, Any],
+        game_state: dict[str, Any],
+        key: str,
+        userID: int,
+    ) -> None:
+        return
 
     def censor_hand(
         censored_player: dict[str, Any],
@@ -70,6 +83,8 @@ def censor_game_state(game_state: dict[str, Any], userID: int) -> str:
     censored_state: dict[str, Any] = {"type": "game_state"}
     censor: dict[str, Callable] = {
         "players": censor_players,
+        "func": ignore,
+        "deck": ignore,
     }
     key: str
     for key in game_state:
@@ -78,28 +93,61 @@ def censor_game_state(game_state: dict[str, Any], userID: int) -> str:
             continue
         func = censor[key]
         func(censored_state, game_state, key, userID)
-    print()
-    print(f"{userID} {censored_state}")
     return json.dumps(censored_state)
 
+def create_deck_default(shuffle=True) -> list[str]:
+    deck: list[str] = []
+    for suit in ["C", "D", "H", "S"]:
+        for i in range(1, 14):
+            if i in range(2, 10):
+                card = str(i) + suit
+                deck.append(card)
+                continue
+            match(i):
+                case 1:
+                    card = "A" + suit
+                case 10:
+                    card = "T" + suit
+                case 10:
+                    card = "T" + suit
+                case 11:
+                    card = "J" + suit
+                case 12:
+                    card = "Q" + suit
+                case 13:
+                    card = "K" + suit
+                case _:
+                    raise ValueError
+            deck.append(card)
+    if shuffle:
+        random.shuffle(deck)
+    return deck
+
 def set_partners_default(players: list[dict[str, Any]]) -> None:
-    partner_index: int = random.randint(1, 3)
-    players[0]["partner"] = partner_index
-    players[partner_index]["partner"] = 0
-    remaining: list[int] = [1, 2, 3]
-    remaining.remove(partner_index)
-    players[remaining[0]]["partner"] = remaining[1]
-    players[remaining[1]]["partner"] = remaining[0]
+    random.shuffle(players)
+    partners = [2, 3, 0, 1]
+    for i, player in enumerate(players):
+        player["partner"] = partners[i]
 
-def initialize_default(players: list[dict[str, Any]]):
-    set_partners_default(players)
-    return
-
-def method_default(game_state):
+def deal_hand_default(game_state: dict[str, Any]) -> None:
+    deck = game_state["deck"]
     players = game_state["players"]
-    initialize_default(players)
-    print(game_state)
-    return
+    while len(deck) != 0:
+        for player in players:
+            try:
+                player["hand"].append(deck.pop())
+            except KeyError:
+                player["hand"] = [ deck.pop() ]
 
-def get_whist_method() -> Callable:
-    return method_default
+def initialize_default(game_state: dict[str, Any]) -> None:
+    game_state["deck"] = create_deck_default()
+    set_partners_default(game_state["players"])
+    deal_hand_default(game_state)
+
+async def func_default(gameID: int, game_state: dict[str, Any]) -> None:
+    initialize_default(game_state)
+    await broadcast_game_state(gameID, game_state)
+    print(game_state)
+
+def get_whist_func() -> Callable:
+    return func_default

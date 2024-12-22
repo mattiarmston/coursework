@@ -2,7 +2,7 @@ import json
 import random
 
 import handlers.utils as utils
-from games.whist import censor_game_state
+from games.whist import censor_game_state, broadcast_game_state, get_whist_func
 
 from typing import Any
 from websockets import WebSocketServerProtocol
@@ -31,9 +31,11 @@ async def handle_whist(websocket, event):
 
 def create(websocket, event):
     gameID = int(event["gameID"])
+    func = get_whist_func()
     game_state = {
         "players": [
         ],
+        "func": func,
     }
     WHIST[gameID] = game_state
 
@@ -65,14 +67,8 @@ async def join(websocket, event):
     if len(utils.get_userIDs(gameID)) != 4:
         await waiting(websocket, event)
         return
-    await test_game_state(websocket, event)
-
-async def broadcast_game_state(gameID: int, game_state: dict[str, Any] = {}) -> None:
-    if game_state == {}:
-        game_state = WHIST[gameID]
-    for userID, websocket in utils.get_websockets(gameID).items():
-        game_stateJSON = censor_game_state(game_state, userID)
-        await websocket.send(game_stateJSON)
+    func = game_state["func"]
+    await func(gameID, game_state)
 
 async def waiting(websocket, event):
     gameID = int(event["gameID"])
@@ -114,7 +110,7 @@ async def test_game_state(websocket, event):
         player["bid"] = random.randint(0, 10)
         player["tricks_won"] = random.randint(1, 5)
         player["hand"] = [ random_card() for _ in range(5) ]
-    await broadcast_game_state(gameID)
+    await broadcast_game_state(gameID, game_state)
 
 async def error(websocket, event):
     print("Error handling event")
