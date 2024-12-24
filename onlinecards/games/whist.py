@@ -1,116 +1,14 @@
 import random
-import json
 
 from typing import Callable, Any
 
-import server
 import handlers.utils as utils
+from games.censor.whist import get_censor_func
 
 async def broadcast_game_state(gameID: int, game_state: dict[str, Any]) -> None:
     for userID, websocket in utils.get_websockets(gameID).items():
-        game_stateJSON = censor_game_state(game_state, userID)
+        game_stateJSON = get_censor_func("default")(game_state, userID)
         await websocket.send(game_stateJSON)
-
-def censor_game_state(game_state: dict[str, Any], userID: int) -> str:
-    def default(
-        censored_state: dict[str, Any],
-        game_state: dict[str, Any],
-        key: str,
-        userID: int,
-    ) -> None:
-        """
-        Copy the key / value pair to censored_state from game_state.
-        """
-        censored_state[key] = game_state[key]
-
-    def default_list(
-        censored_state: list[dict[str, Any]],
-        game_state: list[dict[str, Any]],
-        key: str,
-        userID: int,
-    ) -> None:
-        """
-        Given 2 lists, copy the key / value pair for every item.
-        """
-        for i, item in enumerate(game_state):
-            censored_item = censored_state[i]
-            censored_item[key] = item[key]
-
-    def ignore(
-        censored_state: dict[str, Any],
-        game_state: dict[str, Any],
-        key: str,
-        userID: int,
-    ) -> None:
-        return
-
-    def censor_hands(
-        censored_state: dict[str, Any],
-        game_state: dict[str, Any],
-        key: str,
-        userID: int,
-    ) -> None:
-        for i, player in enumerate(game_state["players"]):
-            censored_player = censored_state["players"][i]
-            if player["userID"] == userID:
-                censored_player["hand"] = player["hand"]
-            else:
-                censored_player["hand"] = [ "" for _ in player["hand"] ]
-
-    def censor_userIDs(
-        censored_state: dict[str, Any],
-        game_state: dict[str, Any],
-        key: str,
-        userID: int,
-    ) -> None:
-        for i, player in enumerate(game_state["players"]):
-            censored_player = censored_state["players"][i]
-            username: str = utils.get_username(player["userID"], server.app)
-            censored_player["username"] = username
-
-    def censor_players(
-        censored_state: dict[str, Any],
-        game_state: dict[str, Any],
-        _: str,
-        userID: int,
-    ) -> None:
-        censored_state["players"] = [ {} for _ in game_state["players"] ]
-        # Assuming that all players have identical keys
-        for key in game_state["players"][0]:
-            censor: dict[str, Callable] = {
-                "hand": censor_hands,
-                "userID": censor_userIDs,
-            }
-            if key not in censor:
-                default_list(
-                    censored_state["players"],
-                    game_state["players"],
-                    key,
-                    userID
-                )
-                continue
-            func = censor[key]
-            func(censored_state, game_state, key, userID)
-        # There may be a more efficient approach for this
-        player: dict[str, Any]
-        for player in game_state["players"]:
-            if player["userID"] == userID:
-                censored_state["current_user"] = game_state["players"].index(player)
-
-    censored_state: dict[str, Any] = {"type": "game_state"}
-    censor: dict[str, Callable] = {
-        "players": censor_players,
-        "func": ignore,
-        "deck": ignore,
-    }
-    key: str
-    for key in game_state:
-        if key not in censor:
-            default(censored_state, game_state, key, userID)
-            continue
-        func = censor[key]
-        func(censored_state, game_state, key, userID)
-    return json.dumps(censored_state)
 
 def create_deck_default(shuffle=True) -> list[str]:
     deck: list[str] = []

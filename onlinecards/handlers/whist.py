@@ -2,7 +2,7 @@ import json
 import random
 
 import handlers.utils as utils
-from games.whist import censor_game_state, broadcast_game_state, get_whist_func
+from games.whist import broadcast_game_state, get_whist_func
 
 from typing import Any
 from websockets import WebSocketServerProtocol
