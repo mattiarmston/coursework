@@ -18,7 +18,23 @@ def censor_game_state(game_state: dict[str, Any], userID: int) -> str:
         key: str,
         userID: int,
     ) -> None:
+        """
+        Copy the key / value pair to censored_state from game_state.
+        """
         censored_state[key] = game_state[key]
+
+    def default_list(
+        censored_state: list[dict[str, Any]],
+        game_state: list[dict[str, Any]],
+        key: str,
+        userID: int,
+    ) -> None:
+        """
+        Given 2 lists, copy the key / value pair for every item.
+        """
+        for i, item in enumerate(game_state):
+            censored_item = censored_state[i]
+            censored_item[key] = item[key]
 
     def ignore(
         censored_state: dict[str, Any],
@@ -28,55 +44,56 @@ def censor_game_state(game_state: dict[str, Any], userID: int) -> str:
     ) -> None:
         return
 
-    def censor_hand(
-        censored_player: dict[str, Any],
-        player: dict[str, Any],
-        hand: str,
+    def censor_hands(
+        censored_state: dict[str, Any],
+        game_state: dict[str, Any],
+        key: str,
         userID: int,
     ) -> None:
-        if player["userID"] == userID:
-            censored_player[hand] = player[hand]
-        else:
-            censored_player[hand] = [ "" for _ in player[hand] ]
+        for i, player in enumerate(game_state["players"]):
+            censored_player = censored_state["players"][i]
+            if player["userID"] == userID:
+                censored_player["hand"] = player["hand"]
+            else:
+                censored_player["hand"] = [ "" for _ in player["hand"] ]
 
-    def censor_userID(
-        censored_player: dict[str, Any],
-        player: dict[str, Any],
-        userID: str,
-        current_userID: int,
-    ) -> None:
-        censored_player["username"] = utils.get_username(player[userID], server.app)
-
-    def censor_player(
-        censored_players: list[dict[str, Any]],
-        player: dict[str, Any],
-        _,
+    def censor_userIDs(
+        censored_state: dict[str, Any],
+        game_state: dict[str, Any],
+        key: str,
         userID: int,
     ) -> None:
-        censored_player: dict[str, Any] = {}
-        censor: dict[str, Callable] = {
-            "hand": censor_hand,
-            "userID": censor_userID,
-        }
-        key: str
-        for key in player:
-            if key not in censor:
-                default(censored_player, player, key, userID)
-                continue
-            func = censor[key]
-            func(censored_player, player, key, userID)
-        censored_players.append(censored_player)
+        for i, player in enumerate(game_state["players"]):
+            censored_player = censored_state["players"][i]
+            username: str = utils.get_username(player["userID"], server.app)
+            censored_player["username"] = username
 
     def censor_players(
         censored_state: dict[str, Any],
         game_state: dict[str, Any],
-        players: str,
+        _: str,
         userID: int,
     ) -> None:
-        censored_state["players"] = []
+        censored_state["players"] = [ {} for _ in game_state["players"] ]
+        # Assuming that all players have identical keys
+        for key in game_state["players"][0]:
+            censor: dict[str, Callable] = {
+                "hand": censor_hands,
+                "userID": censor_userIDs,
+            }
+            if key not in censor:
+                default_list(
+                    censored_state["players"],
+                    game_state["players"],
+                    key,
+                    userID
+                )
+                continue
+            func = censor[key]
+            func(censored_state, game_state, key, userID)
+        # There may be a more efficient approach for this
         player: dict[str, Any]
-        for player in game_state[players]:
-            censor_player(censored_state["players"], player, "", userID)
+        for player in game_state["players"]:
             if player["userID"] == userID:
                 censored_state["current_user"] = game_state["players"].index(player)
 
@@ -123,7 +140,8 @@ def create_deck_default(shuffle=True) -> list[str]:
         random.shuffle(deck)
     return deck
 
-def set_partners_default(players: list[dict[str, Any]]) -> None:
+def set_partners_default(game_state: dict[str, Any]) -> None:
+    players = game_state["players"]
     random.shuffle(players)
     partners = [2, 3, 0, 1]
     for i, player in enumerate(players):
@@ -139,10 +157,18 @@ def deal_hand_default(game_state: dict[str, Any]) -> None:
             except KeyError:
                 player["hand"] = [ deck.pop() ]
 
+def set_trump_default(game_state: dict[str, Any]) -> None:
+    dealer = game_state["players"][game_state["dealer"]]
+    last_card = dealer["hand"][-1]
+    suit = last_card[-1]
+    game_state["trump_suit"] = suit
+
 def initialize_default(game_state: dict[str, Any]) -> None:
     game_state["deck"] = create_deck_default()
-    set_partners_default(game_state["players"])
+    set_partners_default(game_state)
     deal_hand_default(game_state)
+    game_state["dealer"] = 0
+    set_trump_default(game_state)
 
 async def func_default(gameID: int, game_state: dict[str, Any]) -> None:
     initialize_default(game_state)

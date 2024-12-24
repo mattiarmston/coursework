@@ -31,6 +31,11 @@ function rotatePlayers(event) {
   while (event.players[0] != currentPlayer) {
     let rem = event.players.shift();
     event.players.push(rem);
+    // Ensure index still points at correct player
+    event.dealer = event.dealer - 1
+    if (event.dealer < 0) {
+      event.dealer += event.players.length
+    }
   }
 }
 
@@ -108,6 +113,12 @@ function renderPlayerInfoBoxes(event) {
       `Bid: ${player.bid}`,
       `Tricks Won: ${player.tricks_won}`
     );
+    if (event.players[event.dealer] === player) {
+      addMessages(
+        infoBox,
+        `Dealer`
+      )
+    }
     const wrapper = document.getElementById("player" + i);
     const hand = wrapper.querySelector(".hand");
     wrapper.insertBefore(infoBox, hand);

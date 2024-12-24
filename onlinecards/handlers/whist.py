@@ -58,11 +58,13 @@ async def join(websocket, event):
         if player["userID"] == userID:
             exists = True
             break
-    if not exists:
-        player = {
-            "userID": userID,
-        }
-        game_state["players"].append(player)
+    if exists:
+        await broadcast_game_state(gameID, game_state)
+        return
+    player = {
+        "userID": userID,
+    }
+    game_state["players"].append(player)
     # 2 players should not be able to join simultaneously so this should work
     if len(utils.get_userIDs(gameID)) != 4:
         await waiting(websocket, event)
