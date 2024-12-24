@@ -3,11 +3,16 @@ import random
 from typing import Callable, Any
 
 import handlers.utils as utils
-from games.censor.whist import get_censor_func
+from games.censor.whist import get_whist_censor_func
 
-async def broadcast_game_state(gameID: int, game_state: dict[str, Any]) -> None:
+async def broadcast_game_state(
+        gameID: int,
+        game_state: dict[str, Any],
+        censor_variation: str = "",
+    ) -> None:
     for userID, websocket in utils.get_websockets(gameID).items():
-        game_stateJSON = get_censor_func("default")(game_state, userID)
+        censor_func = get_whist_censor_func(censor_variation)
+        game_stateJSON = censor_func(game_state, userID)
         await websocket.send(game_stateJSON)
 
 def create_deck_default(shuffle=True) -> list[str]:
@@ -70,7 +75,7 @@ def initialize_default(game_state: dict[str, Any]) -> None:
 
 async def func_default(gameID: int, game_state: dict[str, Any]) -> None:
     initialize_default(game_state)
-    await broadcast_game_state(gameID, game_state)
+    await broadcast_game_state(gameID, game_state, "first_trick")
     print(game_state)
 
 def get_whist_func() -> Callable:
