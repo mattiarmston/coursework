@@ -74,6 +74,7 @@ function renderTableAndPlayers(event) {
 
 function renderTableInfoBox(event) {
   let table = document.getElementById("table");
+  let infoBox = table.querySelector(".info_box");
 
   let messages = []
   // I am not sure if this is the place where the code should branch. The
@@ -97,7 +98,7 @@ function renderTableInfoBox(event) {
     let trump_suit = map[event.trump_suit]
     messages = [`Trump Suit: ${trump_suit}`];
   }
-  addMessages(table, ...messages);
+  addMessages(infoBox, ...messages);
 }
 
 function renderPlayerInfoBoxes(event) {
@@ -125,7 +126,7 @@ function renderPlayerInfoBoxes(event) {
   }
 }
 
-function getCardHTML(cardName, i) {
+function getCardHTML(cardName) {
   const wrapper = document.createElement("div");
   let url;
   if (cardName === "") {
@@ -140,9 +141,6 @@ function getCardHTML(cardName, i) {
     // The card svg has an approx. aspect ratio of 100:72
     wrapper.style.width = `${5 * 0.72}em`;
     wrapper.style.height = "5em";
-    if (i != 0) {
-      wrapper.style.marginLeft = `-${5 * 0.72 * 0.8}em`;
-    }
     wrapper.innerHTML = text;
   })
   return wrapper;
@@ -166,9 +164,39 @@ function renderHands(event) {
     playerDiv.insertBefore(linebreak, handWrapper);
     let j = 0;
     for (let card of player.hand) {
-      handWrapper.appendChild(getCardHTML(card, j));
+      cardHTML = getCardHTML(card, j);
+      if (j != 0) {
+        cardHTML.style.marginLeft = `-${5 * 0.72 * 0.8}em`;
+      }
+      handWrapper.appendChild(cardHTML);
       j++;
     }
+  }
+}
+
+function renderTrick(event) {
+  if (event.trick === undefined) {
+    return
+  }
+  const table = document.getElementById("table");
+  const communityCards = table.querySelector(".community_cards");
+  let offset = 40;
+  let translations = [ [0, -offset], [offset, 0], [0, offset], [-offset, 0] ];
+  communityCards.style.marginTop = `${offset + 5}px`
+  for (let i in event.trick.played) {
+    card = event.trick.played[i];
+    if (card === null) {
+      continue;
+    }
+    cardHTML = getCardHTML(card);
+    let [x, y] = translations[i];
+    cardHTML.style.transform = `translate(${x}px, ${y}px)`;
+    cardHTML.style.transform += `rotate(${90 * i}deg)`;
+    console.log(cardHTML.style.transform);
+    if (i != 0) {
+      cardHTML.style.position = "absolute";
+    }
+    communityCards.appendChild(cardHTML);
   }
 }
 
@@ -178,6 +206,7 @@ function renderGameState(event) {
   renderTableInfoBox(event);
   renderPlayerInfoBoxes(event);
   renderHands(event);
+  renderTrick(event);
 }
 
 function renderWaiting(event) {

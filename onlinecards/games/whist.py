@@ -72,9 +72,28 @@ def initialize_default(game_state: dict[str, Any]) -> None:
     deal_hand_default(game_state)
     game_state["dealer"] = 0
     set_trump_default(game_state)
+    game_state["trick"] = {}
+
+def play_card_default(game_state: dict[str, Any], player_index: int, card: str) -> None:
+    player = game_state["players"][player_index]
+    player["hand"].remove(card)
+    game_state["trick"]["played"][player_index] = card
+
+def get_trick_winner_default(trick: dict[str, Any]) -> int:
+    return
+
+def play_trick_default(game_state: dict[str, Any], lead: int):
+    trick = game_state["trick"]
+    trick["lead"] = lead
+    trick["played"] = [ None for _ in game_state["players"] ]
+    play_card_default(game_state, 0, game_state["players"][0]["hand"][0])
 
 async def func_default(gameID: int, game_state: dict[str, Any]) -> None:
     initialize_default(game_state)
+    await broadcast_game_state(gameID, game_state, "first_trick")
+    print(game_state)
+    # play_trick_default(game_state, 1)
+    game_state["trick"]["played"] = [ "AS", "3S", "5D", "TS" ]
     await broadcast_game_state(gameID, game_state, "first_trick")
     print(game_state)
 
