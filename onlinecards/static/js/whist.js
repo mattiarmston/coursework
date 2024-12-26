@@ -146,30 +146,61 @@ function getCardHTML(cardName) {
   return wrapper;
 }
 
+function sortHand(hand) {
+  let handCopy = [];
+  // Face down cards are first
+  [ "", "C", "D", "H", "S" ].forEach((suit) => {
+    let sorted = hand
+      .filter((el) => {
+        // Card if face down
+        if (el === "" && suit === "") {return true}
+        return el[1] === suit
+      })
+      .sort((a, b) => {
+        if (a === "" || b === "") { return 0 }
+        let valueMap = {
+          "T": 10,
+          "J": 11,
+          "Q": 12,
+          "K": 13,
+          "A": 14,
+        };
+        const values = [];
+        [a, b].forEach((num) => {
+          let char = num[0];
+          num = Number(char);
+          if (Number.isNaN(num)) { num = valueMap[char] }
+          values.push(num)
+        })
+        return values[0] - values[1];
+      });
+    handCopy.push(...sorted);
+  });
+  return handCopy
+}
+
 function renderHands(event) {
   const content = document.getElementById("content");
   const linebreak = document.createElement("div");
   linebreak.className += "flex_linebreak";
   linebreak.style.marginBottom = "1em";
   content.appendChild(linebreak);
-  for (let i in event.players) {
-    player = event.players[i];
+  for (let [i, player] of event.players.entries()) {
     if (player.hand == undefined) {
       continue;
     }
+    player.hand = sortHand(player.hand);
     const playerDiv = document.getElementById("player" + i)
     const handWrapper = playerDiv.querySelector(".hand");
     const linebreak = document.createElement("div");
     linebreak.className += "flex_linebreak";
     playerDiv.insertBefore(linebreak, handWrapper);
-    let j = 0;
-    for (let card of player.hand) {
+    for (let [j, card] of player.hand.entries()) {
       cardHTML = getCardHTML(card, j);
       if (j != 0) {
         cardHTML.style.marginLeft = `-${5 * 0.72 * 0.8}em`;
       }
       handWrapper.appendChild(cardHTML);
-      j++;
     }
   }
 }
@@ -192,7 +223,6 @@ function renderTrick(event) {
     let [x, y] = translations[i];
     cardHTML.style.transform = `translate(${x}px, ${y}px)`;
     cardHTML.style.transform += `rotate(${90 * i}deg)`;
-    console.log(cardHTML.style.transform);
     if (i != 0) {
       cardHTML.style.position = "absolute";
     }
