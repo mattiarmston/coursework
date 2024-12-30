@@ -1,4 +1,5 @@
 import random
+import json
 
 from typing import Callable, Any
 
@@ -10,7 +11,7 @@ async def broadcast_game_state(
         game_state: dict[str, Any],
         censor_variation: str = "",
     ) -> None:
-    for userID, websocket in utils.get_websockets(gameID).items():
+    for userID, websocket in utils.websockets_from_gameID(gameID).items():
         censor_func = get_whist_censor_func(censor_variation)
         game_stateJSON = censor_func(game_state, userID)
         await websocket.send(game_stateJSON)
@@ -74,6 +75,38 @@ def initialize_default(game_state: dict[str, Any]) -> None:
     set_trump_default(game_state)
     game_state["trick"] = {}
 
+def get_valid_cards_default(game_state: dict[str, Any], player_index: int) -> list[str]:
+    player = game_state["players"][player_index]
+    trick = game_state["trick"]
+    lead_card = trick["played"][trick["lead"]]
+    if lead_card == None:
+        return player["hand"]
+    lead_suit = lead_card[1]
+    valid = []
+    for card in player["hand"]:
+        if card[1] == lead_suit:
+            valid.append(card)
+    if valid != []:
+        return valid
+    return player["hand"]
+
+async def get_user_card_default(game_state: dict[str, Any], player_index: int) -> str:
+    player = game_state["players"][player_index]
+    event = {
+        "type": "choice",
+        "choice": {
+            "type": "play_card",
+            "options": get_valid_cards_default(game_state, player_index),
+        },
+    }
+    websocket = utils.get_websocket(player["userID"])
+    await websocket.send(json.dumps(event))
+    return
+    responseJSON = await websocket.recv()
+    response = json.loads(responseJSON)
+    print(repsonse)
+    return
+
 def play_card_default(game_state: dict[str, Any], player_index: int, card: str) -> None:
     player = game_state["players"][player_index]
     player["hand"].remove(card)
@@ -82,20 +115,22 @@ def play_card_default(game_state: dict[str, Any], player_index: int, card: str) 
 def get_trick_winner_default(trick: dict[str, Any]) -> int:
     return
 
-def play_trick_default(game_state: dict[str, Any], lead: int):
+async def play_trick_default(game_state: dict[str, Any], lead: int):
     trick = game_state["trick"]
     trick["lead"] = lead
     trick["played"] = [ None for _ in game_state["players"] ]
-    play_card_default(game_state, 0, game_state["players"][0]["hand"][0])
+    await get_user_card_default(game_state, 1)
+    # play_card_default(game_state, 0, game_state["players"][0]["hand"][0])
 
 async def func_default(gameID: int, game_state: dict[str, Any]) -> None:
     initialize_default(game_state)
     await broadcast_game_state(gameID, game_state, "first_trick")
     print(game_state)
-    # play_trick_default(game_state, 1)
-    game_state["trick"]["played"] = [ "AS", "3S", "5D", "TS" ]
-    await broadcast_game_state(gameID, game_state, "first_trick")
+    await play_trick_default(game_state, 1)
+    # await broadcast_game_state(gameID, game_state, "first_trick")
     print(game_state)
+    while True:
+        print("waiting for response")
 
 def get_whist_func() -> Callable:
     return func_default

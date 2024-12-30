@@ -31,7 +31,7 @@ def set_userIDs(gameID: int, userIDs: set[int]) -> None:
     GAMES[gameID] = userIDs
     return
 
-def get_websockets(gameID: int) -> dict[int, WebSocketServerProtocol]:
+def websockets_from_gameID(gameID: int) -> dict[int, WebSocketServerProtocol]:
     websockets = {}
     for userID in get_userIDs(gameID):
         try:
@@ -39,6 +39,9 @@ def get_websockets(gameID: int) -> dict[int, WebSocketServerProtocol]:
         except KeyError:
             print(f"Error: could not find userID {userID}")
     return websockets
+
+def get_websocket(userID: int) -> WebSocketServerProtocol:
+    return USERS[userID]
 
 def set_websocket(userID: int, websocket) -> None:
     USERS[userID] = websocket

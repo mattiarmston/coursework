@@ -55,7 +55,7 @@ async def send_message(websocket: WebSocketServerProtocol, event: dict[str, Any]
     except KeyError:
         print(f"Error could not find chatroom {gameID}")
     try:
-        connected: list[WebSocketServerProtocol] = list(utils.get_websockets(gameID).values())
+        connected: list[WebSocketServerProtocol] = list(utils.websockets_from_gameID(gameID).values())
         response = {
             "type": "update",
             "message": message

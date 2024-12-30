@@ -142,6 +142,11 @@ function getCardHTML(cardName) {
     wrapper.style.width = `${5 * 0.72}em`;
     wrapper.style.height = "5em";
     wrapper.innerHTML = text;
+    let name = document.createElement("p");
+    name.style.display = "none";
+    name.className += "name";
+    name.innerHTML = cardName;
+    wrapper.appendChild(name);
   })
   return wrapper;
 }
@@ -246,6 +251,34 @@ function renderWaiting(event) {
   renderPlayerInfoBoxes(event);
 }
 
+function getCard(event, websocket) {
+  const player = document.getElementById("player0");
+  player.style.justifyContent = "center";
+  const hand = player.querySelector(".hand");
+  hand.querySelectorAll("div").forEach((card, j) => {
+    card.style.marginLeft = 0;
+    card.onclick = () => {
+      let nameHTML = card.querySelector(".name");
+      let name = nameHTML.innerHTML;
+      if (name in event.choice.options) {
+        let reponse = {
+          type: "choice",
+          gameID: gameID,
+          userID: userID,
+          chosen: name,
+        }
+        websocket.send(JSON.stringify(response));
+      }
+    }
+  });
+}
+
+function renderChoice(event, websocket) {
+  if (event.choice.type === "play_card") {
+    getCard(event, websocket);
+  }
+}
+
 function recieveMessages(websocket) {
   websocket.onmessage = ({ data }) => {
     const event = JSON.parse(data);
@@ -255,6 +288,9 @@ function recieveMessages(websocket) {
         break;
       case "waiting":
         renderWaiting(event);
+        break;
+      case "choice":
+        renderChoice(event, websocket);
         break;
       case "error":
         console.log(event.message);

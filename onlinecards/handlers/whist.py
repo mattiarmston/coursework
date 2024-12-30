@@ -43,7 +43,7 @@ async def join(websocket, event):
     gameID = int(event["gameID"])
     userID = int(event["userID"])
     try:
-        connected: set[WebSocketServerProtocol] = set(utils.get_websockets(gameID).values())
+        connected: set[WebSocketServerProtocol] = set(utils.websockets_from_gameID(gameID).values())
     except KeyError:
         print(f"Error could not find whist game {gameID}")
         response = {
@@ -99,7 +99,7 @@ def random_card() -> str:
 async def test_game_state(websocket, event):
     gameID = int(event["gameID"])
     try:
-        connected: set[WebSocketServerProtocol] = set(utils.get_websockets(gameID).values())
+        connected: set[WebSocketServerProtocol] = set(utils.websockets_from_gameID(gameID).values())
     except KeyError:
         print(f"Error could not find whist game {gameID}")
         response = {
