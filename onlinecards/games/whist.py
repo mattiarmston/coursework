@@ -67,13 +67,18 @@ def set_trump_default(game_state: dict[str, Any]) -> None:
     suit = last_card[-1]
     game_state["trump_suit"] = suit
 
-def initialize_default(game_state: dict[str, Any]) -> None:
+async def initialize_default(
+        gameID: int, game_state: dict[str, Any], event: dict[str, Any]
+    ) -> None:
     game_state["deck"] = create_deck_default()
     set_partners_default(game_state)
     deal_hand_default(game_state)
+    for player in game_state["players"]:
+        player["tricks_won"] = 0
     game_state["dealer"] = 0
     set_trump_default(game_state)
     game_state["trick"] = {}
+    await broadcast_game_state(gameID, game_state, censor_variation="first_trick")
 
 def get_valid_cards_default(game_state: dict[str, Any], player_index: int) -> list[str]:
     player = game_state["players"][player_index]
@@ -90,8 +95,91 @@ def get_valid_cards_default(game_state: dict[str, Any], player_index: int) -> li
         return valid
     return player["hand"]
 
-async def get_user_card_default(game_state: dict[str, Any], player_index: int) -> str:
-    player = game_state["players"][player_index]
+def play_card_default(
+        gameID: int, game_state: dict[str, Any], event: dict[str, Any]
+    ) -> None:
+    userID = int(event["userID"])
+    index = None
+    for i, player in enumerate(game_state["players"]):
+        if player["userID"] == userID:
+            index = i
+            break
+    if index == None:
+        return
+    if index != game_state["trick"]["next_player"]:
+        return
+    card = event["choice"]["chosen"]
+    player = game_state["players"][index]
+    player["hand"].remove(card)
+    game_state["trick"]["played"][index] = card
+
+def get_trick_winner_default(
+        gameID: int, game_state: dict[str, Any], event: dict[str, Any]
+    ) -> int:
+    def get_value(card):
+        try:
+            value = int(card[0])
+        except ValueError:
+            value = value_map[card[0]]
+        return value
+
+    trick = game_state["trick"]
+    lead = trick["played"][trick["lead"]]
+    trump_suit = game_state["trump_suit"]
+    value_map = {
+        "T": 10,
+        "J": 11,
+        "Q": 12,
+        "K": 13,
+        "A": 14,
+    }
+    winner = trick["lead"]
+    winning_card = lead
+    for i, card in enumerate(trick["played"]):
+        suit = card[1]
+        value = get_value(card)
+        winning_suit = winning_card[1]
+        winning_value = get_value(winning_card)
+        if suit == winning_suit and value > winning_value:
+            winner = i
+            continue
+        if suit != trump_suit:
+            continue
+        if winning_suit != trump_suit:
+            winner = i
+            continue
+        if value > winning_value:
+            winner = i
+            continue
+    return winner
+
+def get_lead_default(gameID: int, game_state: dict[str, Any]) -> int:
+    return 1
+
+def play_trick_default(gameID: int, game_state: dict[str, Any]):
+    lead = get_lead_default(gameID, game_state)
+    game_state["trick"] = {
+        "lead": lead,
+        "played": [ None for _ in game_state["players"] ],
+        "next_player": lead,
+    }
+
+def check_trick_default(
+        gameID: int, game_state: dict[str, Any], event: dict[str, Any]
+    ) -> None:
+    trick = game_state["trick"]
+    if None in trick["played"]:
+        next = trick["next_player"] + 1
+        if next == len(game_state["players"]):
+            next = 0
+        trick["next_player"] = next
+    else:
+        winner = get_trick_winner_default(gameID, game_state, event)
+        game_state["players"][winner]["tricks_won"] += 1
+        trick["prev_winner"] = winner
+
+async def ask_card_default(gameID: int, game_state: dict[str, Any]):
+    player_index = game_state["trick"]["next_player"]
     event = {
         "type": "choice",
         "choice": {
@@ -99,38 +187,71 @@ async def get_user_card_default(game_state: dict[str, Any], player_index: int) -
             "options": get_valid_cards_default(game_state, player_index),
         },
     }
+    player = game_state["players"][player_index]
     websocket = utils.get_websocket(player["userID"])
     await websocket.send(json.dumps(event))
-    return
-    responseJSON = await websocket.recv()
-    response = json.loads(responseJSON)
-    print(repsonse)
-    return
 
-def play_card_default(game_state: dict[str, Any], player_index: int, card: str) -> None:
-    player = game_state["players"][player_index]
-    player["hand"].remove(card)
-    game_state["trick"]["played"][player_index] = card
+async def choice_default(
+        gameID: int, game_state: dict[str, Any], event: dict[str, Any]
+    ) -> None:
+    match event["choice"]["type"]:
+        case "play_card":
+            play_card_default(gameID, game_state, event)
+            return
+        case _:
+            return
 
-def get_trick_winner_default(trick: dict[str, Any]) -> int:
-    return
+async def waiting_default(
+        gameID: int, game_state: dict[str, Any], event: dict[str, Any]
+    ) -> None:
+    players: list[dict[str, Any]] = game_state["players"]
+    response = {
+        "type": "waiting",
+        "no_players": len(players),
+        "players_required": 4,
+        "players": players,
+    }
+    await broadcast_game_state(gameID, response)
 
-async def play_trick_default(game_state: dict[str, Any], lead: int):
-    trick = game_state["trick"]
-    trick["lead"] = lead
-    trick["played"] = [ None for _ in game_state["players"] ]
-    await get_user_card_default(game_state, 1)
-    # play_card_default(game_state, 0, game_state["players"][0]["hand"][0])
+def get_whist_state_handler() -> Callable:
+    async def state_handler_default(
+        gameID: int, game_state: dict[str, Any], event: dict[str, Any]
+    ) -> None:
+        # Call setup and teardown functions after each event
+        match event["type"]:
+            case "waiting":
+                return
+            case "start":
+                play_trick_default(gameID, game_state)
+                await ask_card_default(gameID, game_state)
+                return
+            case "choice":
+                match event["choice"]["type"]:
+                    case "play_card":
+                        check_trick_default(gameID, game_state, event)
+                        await broadcast_game_state(gameID, game_state)
+                        await ask_card_default(gameID, game_state)
+                    case _:
+                        return
+            case _:
+                return
 
-async def func_default(gameID: int, game_state: dict[str, Any]) -> None:
-    initialize_default(game_state)
-    await broadcast_game_state(gameID, game_state, "first_trick")
-    print(game_state)
-    await play_trick_default(game_state, 1)
-    # await broadcast_game_state(gameID, game_state, "first_trick")
-    print(game_state)
-    while True:
-        print("waiting for response")
+    return state_handler_default
 
-def get_whist_func() -> Callable:
+def get_whist_event_handler() -> Callable:
+    def error(event):
+        return lambda *_: print(f"Error could find handler for event {event}")
+
+    def func_default(event: str) -> Callable:
+        try:
+            return events[event]
+        except KeyError:
+            return error(event)
+
+    events: dict[str, Callable] = {
+        "start": initialize_default,
+        "waiting": waiting_default,
+        "choice": choice_default,
+    }
+
     return func_default

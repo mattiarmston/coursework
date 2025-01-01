@@ -31,6 +31,12 @@ function rotatePlayers(event) {
   while (event.players[0] != currentPlayer) {
     let rem = event.players.shift();
     event.players.push(rem);
+    // Ensure cards played point at correct player
+    try {
+      rem = event.trick.played.shift()
+      event.trick.played.push(rem)
+    } catch {
+    }
     // Ensure index still points at correct player
     event.dealer = event.dealer - 1
     if (event.dealer < 0) {
@@ -214,21 +220,32 @@ function renderTrick(event) {
   if (event.trick === undefined) {
     return
   }
+  if (event.trick.played === undefined) {
+    return
+  }
+  let offset = 40;
   const table = document.getElementById("table");
   const communityCards = table.querySelector(".community_cards");
-  let offset = 40;
-  let translations = [ [0, -offset], [offset, 0], [0, offset], [-offset, 0] ];
   communityCards.style.marginTop = `${offset + 5}px`
-  for (let i in event.trick.played) {
-    card = event.trick.played[i];
+  // Cards are rendered in the same order as players
+  //        card 2
+  // card 1        card 3
+  //        card 0
+  let translations = [ [0, offset], [-offset, 0], [0, -offset], [offset, 0] ];
+  let absolute = false;
+  for (let [i, card] of event.trick.played.entries()) {
     if (card === null) {
       continue;
     }
     cardHTML = getCardHTML(card);
     let [x, y] = translations[i];
     cardHTML.style.transform = `translate(${x}px, ${y}px)`;
-    cardHTML.style.transform += `rotate(${90 * i}deg)`;
-    if (i != 0) {
+    cardHTML.style.transform += `rotate(${90 * (i + 2)}deg)`;
+    // First card must be `position: relative` and all afterwards must be `position: absolute`
+    if (!absolute) {
+      cardHTML.style.position = "relative";
+      absolute = true;
+    } else {
       cardHTML.style.position = "absolute";
     }
     communityCards.appendChild(cardHTML);
@@ -260,12 +277,15 @@ function getCard(event, websocket) {
     card.onclick = () => {
       let nameHTML = card.querySelector(".name");
       let name = nameHTML.innerHTML;
-      if (name in event.choice.options) {
-        let reponse = {
+      if (event.choice.options.includes(name)) {
+        let response = {
           type: "choice",
           gameID: gameID,
           userID: userID,
-          chosen: name,
+          choice: {
+            type: "play_card",
+            chosen: name,
+          },
         }
         websocket.send(JSON.stringify(response));
       }
@@ -314,16 +334,17 @@ function copyLink(event) {
   }
 }
 
+const gameID = document.getElementById("gameID").innerHTML;
+const userID = document.cookie
+  .split("; ")
+  .find((cookie) => cookie.startsWith("userID="))
+  // find may return nothing so the `?` means undefined is returned rather than an error
+  // split returns an array where we want the second item, right of the `=`
+  ?.split("=")[1];
+
 function bindFunctions() {
   // localhost needs to be replaced with hostname in production so this requires a better solution
   const websocket = new WebSocket("ws://localhost:8001/");
-  const gameID = document.getElementById("gameID").innerHTML;
-  const userID = document.cookie
-    .split("; ")
-    .find((cookie) => cookie.startsWith("userID="))
-    // find may return nothing so the `?` means undefined is returned rather than an error
-    // split returns an array where we want the second item, right of the `=`
-    ?.split("=")[1];
 
   joinGame(websocket, gameID, userID);
   recieveMessages(websocket);

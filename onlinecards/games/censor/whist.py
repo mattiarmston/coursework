@@ -119,6 +119,29 @@ def set_event_type(event_type: str) -> Callable:
         censored_state["type"] = event_type
     return event_type_setter
 
+def create_trick_func(
+        censor: dict[str, Callable],
+        add_funcs: list[Callable]
+    ) -> Callable:
+
+    def censor_trick(
+            censored_state: dict[str, Any],
+            game_state: dict[str, Any],
+            _: str,
+            userID: int,
+        ) -> None:
+        censored_state["trick"] = {}
+        key: str
+        for key in game_state["trick"]:
+            if key not in censor:
+                default(censored_state["trick"], game_state["trick"], key, userID)
+                continue
+            func = censor[key]
+            func(censored_state, game_state, key, userID)
+        for func in add_funcs:
+            func(censored_state, game_state, userID)
+
+    return censor_trick
 
 def create_main_func(
         censor: dict[str, Callable],
@@ -150,8 +173,16 @@ def get_whist_censor_func(variation: str) -> Callable:
             add_funcs: list[Callable] = []
             censor_players = create_players_func(censor, add_funcs)
             censor: dict[str, Callable] = {
+                "lead": ignore,
+                "next_player": ignore,
+            }
+            add_funcs: list[Callable] = []
+            censor_trick = create_trick_func(censor, add_funcs)
+            censor: dict[str, Callable] = {
                 "players": censor_players,
-                "func": ignore,
+                "trick": censor_trick,
+                "event_handler": ignore,
+                "state_handler": ignore,
                 "deck": ignore,
             }
             add_funcs: list[Callable] = [set_event_type("game_state")]
@@ -164,8 +195,16 @@ def get_whist_censor_func(variation: str) -> Callable:
             add_funcs: list[Callable] = []
             censor_players = create_players_func(censor, add_funcs)
             censor: dict[str, Callable] = {
+                "lead": ignore,
+                "next_player": ignore,
+            }
+            add_funcs: list[Callable] = []
+            censor_trick = create_trick_func(censor, add_funcs)
+            censor: dict[str, Callable] = {
                 "players": censor_players,
-                "func": ignore,
+                "trick": censor_trick,
+                "event_handler": ignore,
+                "state_handler": ignore,
                 "deck": ignore,
             }
             add_funcs: list[Callable] = [set_event_type("game_state")]
