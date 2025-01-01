@@ -179,6 +179,8 @@ form {
     /* flex-flow should be set by js depending on where the most space is */
     align-items: center;
     width: min-content;
+    min-width: 15em;
+    justify-content: center;
 }
 
 .seat {

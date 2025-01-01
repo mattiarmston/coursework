@@ -274,10 +274,10 @@ function getCard(event, websocket) {
   const hand = player.querySelector(".hand");
   hand.querySelectorAll("div").forEach((card, j) => {
     card.style.marginLeft = 0;
-    card.onclick = () => {
-      let nameHTML = card.querySelector(".name");
-      let name = nameHTML.innerHTML;
-      if (event.choice.options.includes(name)) {
+    let nameHTML = card.querySelector(".name");
+    let name = nameHTML.innerHTML;
+    if (event.choice.options.includes(name)) {
+      card.onclick = () => {
         let response = {
           type: "choice",
           gameID: gameID,
@@ -289,6 +289,8 @@ function getCard(event, websocket) {
         }
         websocket.send(JSON.stringify(response));
       }
+    } else {
+      card.style.opacity = 0.5;
     }
   });
 }
@@ -301,24 +303,28 @@ function renderChoice(event, websocket) {
 
 function recieveMessages(websocket) {
   websocket.onmessage = ({ data }) => {
-    const event = JSON.parse(data);
-    switch (event.type) {
-      case "game_state":
-        renderGameState(event);
-        break;
-      case "waiting":
-        renderWaiting(event);
-        break;
-      case "choice":
-        renderChoice(event, websocket);
-        break;
-      case "error":
-        console.log(event.message);
-        break;
-      default:
-        console.log(`Unsupported event type '${event.type}'`)
-        break;
-    }
+    let time = Math.max(0, resume - Date.now())
+    setTimeout(() => {
+      const event = JSON.parse(data);
+      switch (event.type) {
+        case "game_state":
+          renderGameState(event);
+          break;
+        case "waiting":
+          renderWaiting(event);
+          break;
+        case "choice":
+          renderChoice(event, websocket);
+          break;
+        case "error":
+          console.log(event.message);
+          break;
+        default:
+          console.log(`Unsupported event type '${event.type}'`)
+          break;
+      }
+    }, time);
+    resume = Date.now() + 1 * 1000;
   }
 }
 
@@ -341,6 +347,8 @@ const userID = document.cookie
   // find may return nothing so the `?` means undefined is returned rather than an error
   // split returns an array where we want the second item, right of the `=`
   ?.split("=")[1];
+
+let resume = Date.now()
 
 function bindFunctions() {
   // localhost needs to be replaced with hostname in production so this requires a better solution

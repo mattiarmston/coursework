@@ -142,19 +142,28 @@ def get_trick_winner_default(
         winning_value = get_value(winning_card)
         if suit == winning_suit and value > winning_value:
             winner = i
+            winning_card = card
             continue
         if suit != trump_suit:
             continue
         if winning_suit != trump_suit:
             winner = i
+            winning_card = card
             continue
         if value > winning_value:
             winner = i
+            winning_card = card
             continue
     return winner
 
 def get_lead_default(gameID: int, game_state: dict[str, Any]) -> int:
-    return 1
+    try:
+        return game_state["trick"]["prev_winner"]
+    except KeyError:
+        next = game_state["dealer"] + 1
+        if next == len(game_state["players"]):
+            next = 0
+        return next
 
 def play_trick_default(gameID: int, game_state: dict[str, Any]):
     lead = get_lead_default(gameID, game_state)
@@ -166,17 +175,19 @@ def play_trick_default(gameID: int, game_state: dict[str, Any]):
 
 def check_trick_default(
         gameID: int, game_state: dict[str, Any], event: dict[str, Any]
-    ) -> None:
+    ) -> bool:
     trick = game_state["trick"]
     if None in trick["played"]:
         next = trick["next_player"] + 1
         if next == len(game_state["players"]):
             next = 0
         trick["next_player"] = next
+        return False
     else:
         winner = get_trick_winner_default(gameID, game_state, event)
         game_state["players"][winner]["tricks_won"] += 1
         trick["prev_winner"] = winner
+        return True
 
 async def ask_card_default(gameID: int, game_state: dict[str, Any]):
     player_index = game_state["trick"]["next_player"]
@@ -224,13 +235,18 @@ def get_whist_state_handler() -> Callable:
             case "start":
                 play_trick_default(gameID, game_state)
                 await ask_card_default(gameID, game_state)
-                return
             case "choice":
                 match event["choice"]["type"]:
                     case "play_card":
-                        check_trick_default(gameID, game_state, event)
+                        end = check_trick_default(gameID, game_state, event)
                         await broadcast_game_state(gameID, game_state)
-                        await ask_card_default(gameID, game_state)
+                        if not end:
+                            await ask_card_default(gameID, game_state)
+                        else:
+                            print("trick end")
+                            play_trick_default(gameID, game_state)
+                            await broadcast_game_state(gameID, game_state)
+                            await ask_card_default(gameID, game_state)
                     case _:
                         return
             case _:
