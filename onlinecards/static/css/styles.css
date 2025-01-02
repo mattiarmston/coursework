@@ -19,6 +19,7 @@ body {
     display: flex;
     flex-direction: column;
     margin: 0;
+    font-family: Lora;
 }
 
 h2 {
@@ -172,6 +173,30 @@ form {
 .community_cards {
     display: flex;
     flex-flow: row nowrap;
+}
+
+.scoreboard {
+    color: antiquewhite;
+    border: solid;
+    border-collapse: collapse;
+    width: 50%;
+}
+
+.scoreboard th {
+    border: solid antiquewhite;
+    padding: 1em;
+    background-color: antiquewhite;
+    color: var(--bg-brown);
+}
+
+.scoreboard td {
+    border: solid antiquewhite;
+    padding: 1em;
+    color: antiquewhite;
+}
+
+.scoreboard td:last-child {
+    text-align: right;
 }
 
 .player {

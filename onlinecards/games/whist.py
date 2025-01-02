@@ -16,6 +16,28 @@ async def broadcast_game_state(
         game_stateJSON = censor_func(game_state, userID)
         await websocket.send(game_stateJSON)
 
+async def broadcast_scoreboard(
+        gameID: int,
+        game_state: dict[str, Any],
+        censor_variation: str = "",
+    ) -> None:
+    scoreboard = {
+        "teams": [
+            {
+                "players": [0, 2],
+                "score": game_state["players"][0]["points"],
+            },
+            {
+                "players": [1, 3],
+                "score": game_state["players"][1]["points"],
+            },
+        ],
+    }
+    for team in scoreboard["teams"]:
+        for i, player_index in enumerate(team["players"]):
+            team["players"][i] = game_state["players"][player_index]
+    await broadcast_game_state(gameID, scoreboard, censor_variation="scoreboard")
+
 def create_deck_default(shuffle=True) -> list[str]:
     deck: list[str] = []
     for suit in ["C", "D", "H", "S"]:
@@ -75,6 +97,7 @@ async def initialize_default(
     deal_hand_default(game_state)
     for player in game_state["players"]:
         player["tricks_won"] = 0
+        player["points"] = 0
     game_state["dealer"] = 0
     set_trump_default(game_state)
     game_state["trick"] = {}
@@ -189,6 +212,34 @@ def check_trick_default(
         trick["prev_winner"] = winner
         return True
 
+def check_hand_default(
+        gameID: int, game_state: dict[str, Any]
+    ) -> bool:
+    player = game_state["players"][0]
+    if len(player["hand"]) == 0:
+        return False
+    else:
+        return True
+
+def update_scores_default(
+        gameID: int, game_state: dict[str, Any]
+    ) -> None:
+    points: list[int] = [0, 0]
+    for i in [0, 1]:
+        player = game_state["players"][i]
+        points[i] += player["tricks_won"]
+        partner = game_state["players"][player["partner"]]
+        points[i] += partner["tricks_won"]
+    for i in [0, 1]:
+        diff: int = points[i] - points[i - 1]
+        diff = max(0, diff)
+        points[i] = diff
+    for i in [0, 1]:
+        player = game_state["players"][i]
+        player["points"] += points[i]
+        partner = game_state["players"][player["partner"]]
+        partner["points"] += points[i]
+
 async def ask_card_default(gameID: int, game_state: dict[str, Any]):
     player_index = game_state["trick"]["next_player"]
     event = {
@@ -242,11 +293,13 @@ def get_whist_state_handler() -> Callable:
                         await broadcast_game_state(gameID, game_state)
                         if not end:
                             await ask_card_default(gameID, game_state)
-                        else:
-                            print("trick end")
+                        elif check_hand_default(gameID, game_state):
                             play_trick_default(gameID, game_state)
                             await broadcast_game_state(gameID, game_state)
                             await ask_card_default(gameID, game_state)
+                        else:
+                            update_scores_default(gameID, game_state)
+                            await broadcast_scoreboard(gameID, game_state)
                     case _:
                         return
             case _:

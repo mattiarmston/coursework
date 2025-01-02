@@ -90,10 +90,14 @@ def create_players_func(
         userID: int,
     ) -> None:
         censored_state["players"] = [ {} for _ in game_state["players"] ]
+        try:
+            default_func: Callable = censor["_"]
+        except KeyError:
+            default_func: Callable = default_list
         # Assuming that all players have identical keys
         for key in game_state["players"][0]:
             if key not in censor:
-                default_list(
+                default_func(
                     censored_state["players"],
                     game_state["players"],
                     key,
@@ -143,6 +147,46 @@ def create_trick_func(
 
     return censor_trick
 
+def remove_current_user(
+        censored_state: dict[str, Any],
+        game_state: dict[str, Any],
+        userID: int,
+    ):
+    for team in censored_state["teams"]:
+        try:
+            del team["current_user"]
+        except KeyError:
+            pass
+
+def create_teams_func(
+        censor: dict[str, Callable],
+        add_funcs: list[Callable]
+    ) -> Callable:
+
+    def censor_teams(
+        censored_state: dict[str, Any],
+        game_state: dict[str, Any],
+        _: str,
+        userID: int,
+    ) -> None:
+        censored_state["teams"] = [ {} for _ in game_state["teams"] ]
+        # Assuming that all players have identical keys
+        for key in game_state["teams"][0]:
+            if key not in censor:
+                default_list(
+                    censored_state["teams"],
+                    game_state["teams"],
+                    key,
+                    userID
+                )
+                continue
+            func = censor[key]
+            func(censored_state, game_state, key, userID)
+        for func in add_funcs:
+            func(censored_state, game_state, userID)
+
+    return censor_teams
+
 def create_main_func(
         censor: dict[str, Callable],
         add_funcs: list[Callable]
@@ -169,6 +213,7 @@ def get_whist_censor_func(variation: str) -> Callable:
             censor: dict[str, Callable] = {
                 "hand": censor_hands_first_trick,
                 "userID": censor_userIDs,
+                "points": ignore,
             }
             add_funcs: list[Callable] = []
             censor_players = create_players_func(censor, add_funcs)
@@ -187,6 +232,28 @@ def get_whist_censor_func(variation: str) -> Callable:
             }
             add_funcs: list[Callable] = [set_event_type("game_state")]
             return create_main_func(censor, add_funcs)
+        case "scoreboard":
+            censor: dict[str, Callable] = {
+                "userID": censor_userIDs,
+                "_": ignore,
+            }
+            add_funcs: list[Callable] = []
+            censor_players = create_players_func(censor, add_funcs)
+            def wrapper(
+                    censored_state, game_state, key, userID
+                )-> None:
+                for i, team in enumerate(game_state["teams"]):
+                    censor_players(censored_state["teams"][i], team, key, userID)
+            censor: dict[str, Callable] = {
+                "players": wrapper,
+            }
+            add_funcs: list[Callable] = [remove_current_user]
+            censor_teams = create_teams_func(censor, add_funcs)
+            censor: dict[str, Callable] = {
+                "teams": censor_teams,
+            }
+            add_funcs: list[Callable] = [set_event_type("scoreboard")]
+            return create_main_func(censor, add_funcs)
         case _:
             censor: dict[str, Callable] = {
                 "hand": censor_hands,
@@ -197,6 +264,7 @@ def get_whist_censor_func(variation: str) -> Callable:
             censor: dict[str, Callable] = {
                 "lead": ignore,
                 "next_player": ignore,
+                "points": ignore,
             }
             add_funcs: list[Callable] = []
             censor_trick = create_trick_func(censor, add_funcs)

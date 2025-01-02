@@ -275,6 +275,11 @@ function getCard(event, websocket) {
   hand.querySelectorAll("div").forEach((card, j) => {
     card.style.marginLeft = 0;
     let nameHTML = card.querySelector(".name");
+    // This likely means that the hand has not loaded yet
+    if (nameHTML === null) {
+      // so we should wait for it to load
+      setTimeout(() => getCard(event, websocket), 100);
+    }
     let name = nameHTML.innerHTML;
     if (event.choice.options.includes(name)) {
       card.onclick = () => {
@@ -295,6 +300,29 @@ function getCard(event, websocket) {
   });
 }
 
+function renderScoreboard(event) {
+  const scoreboardTemplate = document.getElementById("scoreboard_template");
+  const scoreboard = scoreboardTemplate.content.cloneNode(true).querySelector(".scoreboard");
+  const scoreboard_body = scoreboard.querySelector("tbody");
+  for (let team of event.teams) {
+    const row = document.createElement("tr");
+    const names = document.createElement("td");
+    for (let [i, player] of team.players.entries()) {
+      if (i != 0) {
+        names.innerHTML += " and ";
+      }
+      names.innerHTML += `<strong>${player.username}</strong>`;
+    }
+    const score = document.createElement("td");
+    score.innerHTML = `${team.score}`;
+    row.appendChild(names);
+    row.appendChild(score);
+    scoreboard_body.appendChild(row);
+  }
+  const content = document.getElementById("content");
+  content.replaceChildren(scoreboard);
+}
+
 function renderChoice(event, websocket) {
   if (event.choice.type === "play_card") {
     getCard(event, websocket);
@@ -312,6 +340,9 @@ function recieveMessages(websocket) {
           break;
         case "waiting":
           renderWaiting(event);
+          break;
+        case "scoreboard":
+          renderScoreboard(event);
           break;
         case "choice":
           renderChoice(event, websocket);
