@@ -75,6 +75,8 @@ function renderTableAndPlayers(event) {
     players[0]
   ];
 
+  const content = document.getElementById("content");
+  content.style.flexDirection = "row";
   content.replaceChildren(...html);
 }
 
@@ -300,7 +302,7 @@ function getCard(event, websocket) {
   });
 }
 
-function renderScoreboard(event) {
+function renderScoreboard(event, websocket) {
   const scoreboardTemplate = document.getElementById("scoreboard_template");
   const scoreboard = scoreboardTemplate.content.cloneNode(true).querySelector(".scoreboard");
   const scoreboard_body = scoreboard.querySelector("tbody");
@@ -321,6 +323,34 @@ function renderScoreboard(event) {
   }
   const content = document.getElementById("content");
   content.replaceChildren(scoreboard);
+  if (event.winner !== undefined) {
+    let team = event.teams[event.winner];
+    let msg = document.createElement("h4");
+    for (let [i, player] of team.players.entries()) {
+      if (i != 0) {
+        msg.innerHTML += " and ";
+      }
+      msg.innerHTML += `<strong>${player.username}</strong>`;
+    }
+    msg.innerHTML += " win the game!";
+    content.style.flexDirection = "column";
+    content.insertBefore(msg, scoreboard);
+
+    let playAgain = document.createElement("a");
+    playAgain.innerHTML = "Play Again";
+    playAgain.style.marginTop = "0.5em";
+    playAgain.style.textDecoration = "underline";
+    playAgain.onclick = (e) => {
+      e.preventDefault();
+      let restart = {
+        type: "start",
+        gameID: gameID,
+        userID: userID,
+      };
+      websocket.send(JSON.stringify(restart));
+    }
+    content.appendChild(playAgain);
+  }
 }
 
 function renderChoice(event, websocket) {
@@ -342,7 +372,7 @@ function recieveMessages(websocket) {
           renderWaiting(event);
           break;
         case "scoreboard":
-          renderScoreboard(event);
+          renderScoreboard(event, websocket);
           break;
         case "choice":
           renderChoice(event, websocket);

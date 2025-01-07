@@ -21,7 +21,7 @@ async def broadcast_scoreboard(
         game_state: dict[str, Any],
         censor_variation: str = "",
     ) -> None:
-    scoreboard = {
+    scoreboard: dict[str, Any] = {
         "teams": [
             {
                 "players": [0, 2],
@@ -33,6 +33,10 @@ async def broadcast_scoreboard(
             },
         ],
     }
+    if censor_variation == "game_end":
+        for i, team in enumerate(scoreboard["teams"]):
+            if team["players"] == game_state["winner"]:
+                scoreboard["winner"] = i
     for team in scoreboard["teams"]:
         for i, player_index in enumerate(team["players"]):
             team["players"][i] = game_state["players"][player_index]
@@ -92,16 +96,26 @@ def set_trump_default(game_state: dict[str, Any]) -> None:
 async def initialize_default(
         gameID: int, game_state: dict[str, Any], event: dict[str, Any]
     ) -> None:
-    game_state["deck"] = create_deck_default()
     set_partners_default(game_state)
+    for player in game_state["players"]:
+        player["points"] = 0
+    initialize_hand_default(gameID, game_state)
+    await broadcast_game_state(gameID, game_state, censor_variation="first_trick")
+
+def initialize_hand_default(
+        gameID: int, game_state: dict[str, Any]
+    ) -> None:
+    game_state["deck"] = create_deck_default()
     deal_hand_default(game_state)
     for player in game_state["players"]:
         player["tricks_won"] = 0
-        player["points"] = 0
-    game_state["dealer"] = 0
+    try:
+        game_state["dealer"] += 1
+    except KeyError:
+        game_state["dealer"] = 0
     set_trump_default(game_state)
     game_state["trick"] = {}
-    await broadcast_game_state(gameID, game_state, censor_variation="first_trick")
+    print("hand initialised")
 
 def get_valid_cards_default(game_state: dict[str, Any], player_index: int) -> list[str]:
     player = game_state["players"][player_index]
@@ -221,7 +235,7 @@ def check_hand_default(
     else:
         return True
 
-def update_scores_default(
+def update_points_default(
         gameID: int, game_state: dict[str, Any]
     ) -> None:
     points: list[int] = [0, 0]
@@ -230,15 +244,28 @@ def update_scores_default(
         points[i] += player["tricks_won"]
         partner = game_state["players"][player["partner"]]
         points[i] += partner["tricks_won"]
+    points_copy = [0, 0]
     for i in [0, 1]:
         diff: int = points[i] - points[i - 1]
         diff = max(0, diff)
-        points[i] = diff
+        points_copy[i] = diff
+    points = points_copy
     for i in [0, 1]:
         player = game_state["players"][i]
         player["points"] += points[i]
         partner = game_state["players"][player["partner"]]
         partner["points"] += points[i]
+
+def check_game_end_default(
+        gameID: int, game_state: dict[str, Any]
+    ) -> bool:
+    players = game_state["players"]
+    for i in [0, 1]:
+        player = players[i]
+        if player["points"] >= 5:
+            game_state["winner"] = [i, player["partner"]]
+            return True
+    return False
 
 async def ask_card_default(gameID: int, game_state: dict[str, Any]):
     player_index = game_state["trick"]["next_player"]
@@ -298,8 +325,20 @@ def get_whist_state_handler() -> Callable:
                             await broadcast_game_state(gameID, game_state)
                             await ask_card_default(gameID, game_state)
                         else:
-                            update_scores_default(gameID, game_state)
+                            update_points_default(gameID, game_state)
                             await broadcast_scoreboard(gameID, game_state)
+                            if check_game_end_default(gameID, game_state):
+                                await broadcast_scoreboard(
+                                    gameID, game_state, "game_end"
+                                )
+                            else:
+                                print("game not done")
+                                initialize_hand_default(gameID, game_state)
+                                play_trick_default(gameID, game_state)
+                                await broadcast_game_state(gameID, game_state)
+                                print("trick initialised")
+                                await ask_card_default(gameID, game_state)
+                                print("asked card")
                     case _:
                         return
             case _:

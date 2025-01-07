@@ -29,6 +29,13 @@ h2 {
     font-weight: normal;
 }
 
+h4 {
+    color: antiquewhite;
+    font-size: 1.25em;
+    font-family: Lora, serif;
+    font-weight: normal;
+}
+
 h6 {
     color: antiquewhite;
     font-size: 1em;
