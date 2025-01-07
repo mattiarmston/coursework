@@ -163,6 +163,17 @@ def create_app():
         response.set_cookie("userID", str(userID))
         return response
 
+    @app.after_request
+    def set_cached(response):
+        if request.method == "GET":
+            if request.path.startswith("/static/cards-fancy") or \
+               request.path.startswith("/static/card-simple"):
+                # Cache is valid for an arbitrarily long time (1 year)
+                response.cache_control.max_age = 60 * 60 * 24 * 365
+                response.cache_control.no_cache = False
+                response.cache_control.immutable = True
+        return response
+
     database.init_db(app)
 
     return app
