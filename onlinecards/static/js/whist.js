@@ -338,8 +338,9 @@ function renderScoreboard(event, websocket) {
 
     let playAgain = document.createElement("a");
     playAgain.innerHTML = "Play Again";
-    playAgain.style.marginTop = "0.5em";
-    playAgain.style.textDecoration = "underline";
+    // Required to render with underline and correct mouse icon on hover
+    playAgain.href = "";
+    playAgain.style.marginTop = "1em";
     playAgain.onclick = (e) => {
       e.preventDefault();
       let restart = {
