@@ -2,7 +2,6 @@ import json
 
 from typing import Any, Callable
 
-from server import app
 import handlers.utils as utils
 
 def default(
@@ -75,7 +74,7 @@ def censor_userIDs(
 ) -> None:
     for i, player in enumerate(game_state["players"]):
         censored_player = censored_state["players"][i]
-        username: str = utils.get_username(player["userID"], app)
+        username: str = utils.get_username(player["userID"])
         censored_player["username"] = username
 
 def create_players_func(

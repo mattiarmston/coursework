@@ -19,14 +19,8 @@ async def handler(websocket):
             case "join":
                 await join(websocket, event)
 
-        with app.app_context():
-            gameID = int(event["gameID"])
-            cursor = database.get_db().cursor()
-            result = cursor.execute(
-                "SELECT config FROM games WHERE gameID = ?",
-                [gameID]
-            ).fetchone()
-            config = json.loads(result["config"])
+        gameID = int(event["gameID"])
+        config = utils.get_config(gameID)
         game_handler = get_game_handler(config["game_type"])
         await game_handler(websocket, event)
 

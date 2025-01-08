@@ -1,5 +1,8 @@
-import database
+import json
 
+import database, server
+
+from typing import Any
 from websockets.legacy.server import WebSocketServerProtocol
 
 # `GAMES` links from a `gameID` to a set of connected `userID`s
@@ -46,8 +49,8 @@ def get_websocket(userID: int) -> WebSocketServerProtocol:
 def set_websocket(userID: int, websocket) -> None:
     USERS[userID] = websocket
 
-def get_username(userID: int, app) -> str:
-    with app.app_context():
+def get_username(userID: int) -> str:
+    with server.app.app_context():
         cursor = database.get_db().cursor()
         result = cursor.execute(
             "SELECT username FROM users WHERE userID = ?",
@@ -55,4 +58,14 @@ def get_username(userID: int, app) -> str:
         ).fetchone()
         username = result["username"]
         return username
+
+def get_config(gameID: int) -> dict[str, Any]:
+    with server.app.app_context():
+        cursor = database.get_db().cursor()
+        result = cursor.execute(
+            "SELECT config FROM games WHERE gameID = ?",
+            [gameID]
+        ).fetchone()
+        config = json.loads(result["config"])
+    return config
 
