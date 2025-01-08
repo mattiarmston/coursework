@@ -115,7 +115,6 @@ def initialize_hand_default(
         game_state["dealer"] = 0
     set_trump_default(game_state)
     game_state["trick"] = {}
-    print("hand initialised")
 
 def get_valid_cards_default(game_state: dict[str, Any], player_index: int) -> list[str]:
     player = game_state["players"][player_index]
@@ -302,70 +301,101 @@ async def waiting_default(
     }
     await broadcast_game_state(gameID, response)
 
+
 def get_whist_state_handler() -> Callable:
+    async def default(
+            *_
+        ) -> None:
+        return
+
+    async def start(
+            gameID, game_state, event
+        ) -> None:
+        play_trick_default(gameID, game_state)
+        await ask_card_default(gameID, game_state)
+
+    def get_choice_handler() -> Callable:
+        async def default(
+                *_
+            ) -> None:
+            return
+
+        async def play_card(
+                gameID, game_state, event
+            ) -> None:
+            end = check_trick_end_default(gameID, game_state, event)
+            await broadcast_game_state(gameID, game_state)
+            if not end:
+                await ask_card_default(gameID, game_state)
+            else:
+                event["type"] = "end_trick"
+                print('event["type"]', event["type"])
+                await state_handler_default(gameID, game_state, event)
+
+        map: dict[str, Callable] = {
+            "play_card": play_card,
+            "_": default,
+        }
+
+        async def choice_handler(
+                gameID: int, game_state: dict[str, Any], event: dict[str, Any]
+            ):
+            func = map.get(event["choice"]["type"], map["_"])
+            await func(gameID, game_state, event)
+
+        return choice_handler
+
+    async def end_trick(
+            gameID, game_state, event
+        ) -> None:
+        end = check_hand_end_default(gameID, game_state)
+        if not end:
+            play_trick_default(gameID, game_state)
+            await broadcast_game_state(gameID, game_state)
+            await ask_card_default(gameID, game_state)
+        else:
+            event["type"] = "end_hand"
+            await state_handler_default(gameID, game_state, event)
+
+    async def end_hand(
+            gameID, game_state, event
+        ) -> None:
+        update_points_default(gameID, game_state)
+        await broadcast_scoreboard(gameID, game_state)
+        end = check_game_end_default(gameID, game_state)
+        if not end:
+            initialize_hand_default(gameID, game_state)
+            play_trick_default(gameID, game_state)
+            await broadcast_game_state(gameID, game_state)
+            await ask_card_default(gameID, game_state)
+        else:
+            event["type"] = "end_game"
+            print('event["type"]', event["type"])
+            await state_handler_default(gameID, game_state, event)
+
+    async def end_game(
+            gameID, game_state, event
+        ) -> None:
+        print('event["type"]', event["type"])
+        await broadcast_scoreboard(
+            gameID, game_state, "game_end"
+        )
+
+    map: dict[str, Callable] = {
+        "start": start,
+        "choice": get_choice_handler(),
+        "end_trick": end_trick,
+        "end_hand": end_hand,
+        "end_game": end_game,
+        "_": default,
+    }
+
     async def state_handler_default(
         gameID: int, game_state: dict[str, Any], event: dict[str, Any]
     ) -> None:
         # Call setup and teardown functions after each event
-        match event["type"]:
-            case "waiting":
-                return
-
-            case "start":
-                play_trick_default(gameID, game_state)
-                await ask_card_default(gameID, game_state)
-
-            case "choice":
-                match event["choice"]["type"]:
-                    case "play_card":
-                        end = check_trick_end_default(gameID, game_state, event)
-                        await broadcast_game_state(gameID, game_state)
-                        if not end:
-                            await ask_card_default(gameID, game_state)
-                        else:
-                            event["type"] = "end_trick"
-                            print('event["type"]', event["type"])
-                            await state_handler_default(gameID, game_state, event)
-
-                    case _:
-                        return
-
-            case "end_trick":
-                end = check_hand_end_default(gameID, game_state)
-                if not end:
-                    play_trick_default(gameID, game_state)
-                    await broadcast_game_state(gameID, game_state)
-                    await ask_card_default(gameID, game_state)
-                else:
-                    event["type"] = "end_hand"
-                    print('event["type"]', event["type"])
-                    await state_handler_default(gameID, game_state, event)
-
-            case "end_hand":
-                update_points_default(gameID, game_state)
-                await broadcast_scoreboard(gameID, game_state)
-                end = check_game_end_default(gameID, game_state)
-                if not end:
-                    print("game not done")
-                    initialize_hand_default(gameID, game_state)
-                    play_trick_default(gameID, game_state)
-                    await broadcast_game_state(gameID, game_state)
-                    print("trick initialised")
-                    await ask_card_default(gameID, game_state)
-                    print("asked card")
-                else:
-                    event["type"] = "end_game"
-                    print('event["type"]', event["type"])
-                    await state_handler_default(gameID, game_state, event)
-
-            case "end_game":
-                print('event["type"]', event["type"])
-                await broadcast_scoreboard(
-                    gameID, game_state, "game_end"
-                )
-
-            case _:
-                return
+        func = map.get(event["type"], map["_"])
+        await func(gameID, game_state, event)
 
     return state_handler_default
 
