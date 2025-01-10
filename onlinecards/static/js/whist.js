@@ -270,17 +270,22 @@ function renderWaiting(event) {
   renderPlayerInfoBoxes(event);
 }
 
-function getCard(event, websocket) {
+async function getCard(event, websocket) {
   const player = document.getElementById("player0");
   player.style.justifyContent = "center";
   const hand = player.querySelector(".hand");
-  hand.querySelectorAll("div").forEach((card, j) => {
+  hand.querySelectorAll("div").forEach(async (card, i) => {
     card.style.marginLeft = 0;
-    let nameHTML = card.querySelector(".name");
-    // This likely means that the hand has not loaded yet
-    if (nameHTML === null) {
-      // so we should wait for it to load
-      setTimeout(() => getCard(event, websocket), 100);
+    // This can run before the cards are properly rendered, for reasons I don't
+    // fully understand
+    let nameHTML = null;
+    while (nameHTML === null) {
+      nameHTML = card.querySelector(".name");
+      // To fix this running before cards are rendered, we 'sleep' for 100ms
+      // before retrying
+      if (nameHTML === null) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
     }
     let name = nameHTML.innerHTML;
     if (event.choice.options.includes(name)) {
@@ -385,7 +390,11 @@ function recieveMessages(websocket) {
           console.log(`Unsupported event type '${event.type}'`)
           break;
       }
+      // This gives a more accurate delay, 1 second after the last event has rendered
+      resume = Date.now() + 1 * 1000;
     }, time);
+    // If 2 events are sent one after another, this ensures the first has 1 second
+    // to render before the 2nd event does
     resume = Date.now() + 1 * 1000;
   }
 }
