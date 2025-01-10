@@ -34,8 +34,9 @@ async def handle_whist(websocket, event):
 
 def create(websocket, event):
     gameID = int(event["gameID"])
-    event_handler = get_whist_event_handler()
-    state_handler = get_whist_state_handler()
+    config = utils.get_config(gameID)
+    event_handler = get_whist_event_handler(config)
+    state_handler = get_whist_state_handler(config)
     game_state = {
         "players": [
         ],

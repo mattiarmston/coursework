@@ -113,6 +113,8 @@ def initialize_hand_default(
         game_state["dealer"] += 1
     except KeyError:
         game_state["dealer"] = 0
+    if game_state["dealer"] == len(game_state["players"]):
+        game_state["dealer"] = 0
     set_trump_default(game_state)
     game_state["trick"] = {}
 
@@ -266,6 +268,17 @@ def check_game_end_default(
             return True
     return False
 
+def check_game_end_american_short_whist(
+        gameID: int, game_state: dict[str, Any]
+    ) -> bool:
+    players = game_state["players"]
+    for i in [0, 1]:
+        player = players[i]
+        if player["points"] >= 7:
+            game_state["winner"] = [i, player["partner"]]
+            return True
+    return False
+
 async def ask_card_default(gameID: int, game_state: dict[str, Any]):
     player_index = game_state["trick"]["next_player"]
     event = {
@@ -302,7 +315,7 @@ async def waiting_default(
     await broadcast_game_state(gameID, response)
 
 
-def get_whist_state_handler() -> Callable:
+def get_whist_state_handler(config: dict[str, Any]) -> Callable:
     async def default(
             *_
         ) -> None:
@@ -314,7 +327,7 @@ def get_whist_state_handler() -> Callable:
         play_trick_default(gameID, game_state)
         await ask_card_default(gameID, game_state)
 
-    def get_choice_handler() -> Callable:
+    def get_choice_handler(config: dict[str, Any]) -> Callable:
         async def default(
                 *_
             ) -> None:
@@ -357,21 +370,31 @@ def get_whist_state_handler() -> Callable:
             event["type"] = "end_hand"
             await state_handler_default(gameID, game_state, event)
 
-    async def end_hand(
-            gameID, game_state, event
-        ) -> None:
-        update_points_default(gameID, game_state)
-        await broadcast_scoreboard(gameID, game_state)
-        end = check_game_end_default(gameID, game_state)
-        if not end:
-            initialize_hand_default(gameID, game_state)
-            play_trick_default(gameID, game_state)
-            await broadcast_game_state(gameID, game_state)
-            await ask_card_default(gameID, game_state)
-        else:
-            event["type"] = "end_game"
-            print('event["type"]', event["type"])
-            await state_handler_default(gameID, game_state, event)
+
+    def get_end_hand(config: dict[str, Any]) -> Callable:
+        match config["scoring"]:
+            case "american_short_whist":
+                game_end_func = check_game_end_american_short_whist
+            case _:
+                game_end_func = check_game_end_default
+
+        async def end_hand(
+                gameID, game_state, event
+            ) -> None:
+            update_points_default(gameID, game_state)
+            await broadcast_scoreboard(gameID, game_state)
+            end = game_end_func(gameID, game_state)
+            if not end:
+                initialize_hand_default(gameID, game_state)
+                play_trick_default(gameID, game_state)
+                await broadcast_game_state(gameID, game_state)
+                await ask_card_default(gameID, game_state)
+            else:
+                event["type"] = "end_game"
+                print('event["type"]', event["type"])
+                await state_handler_default(gameID, game_state, event)
+
+        return end_hand
 
     async def end_game(
             gameID, game_state, event
@@ -383,9 +406,9 @@ def get_whist_state_handler() -> Callable:
 
     map: dict[str, Callable] = {
         "start": start,
-        "choice": get_choice_handler(),
+        "choice": get_choice_handler(config),
         "end_trick": end_trick,
-        "end_hand": end_hand,
+        "end_hand": get_end_hand(config),
         "end_game": end_game,
         "_": default,
     }
@@ -399,7 +422,7 @@ def get_whist_state_handler() -> Callable:
 
     return state_handler_default
 
-def get_whist_event_handler() -> Callable:
+def get_whist_event_handler(config: dict[str, Any]) -> Callable:
     def error(event):
         return lambda *_: print(f"Error could find handler for event {event}")
 
